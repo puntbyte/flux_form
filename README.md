@@ -1,6 +1,6 @@
 # Flux Form
 
-A modular, type-safe, and declarative form state management library for Flutter. **FluxForm** 
+A modular, type-safe, and declarative form state management library for Flutter. **Flux Form** 
 removes the boilerplate associated with form validation by using **Composition over Inheritance** 
 and smart UI state management.
 
