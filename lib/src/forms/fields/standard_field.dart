@@ -51,7 +51,7 @@ class StandardField<T> extends Field<T, FormError> {
   }
 
   @override
-  StandardField<T> copyWith({
+  StandardField<T> update({
     T? value,
     bool? isTouched,
     ValidationMode? mode,

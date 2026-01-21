@@ -15,7 +15,7 @@ class AuthField extends Field<String, AuthError> {
   AuthError? validate(String value) => ValidatorPipeline.validate(value, rules);
 
   @override
-  AuthField copyWith({
+  AuthField update({
     String? value,
     bool? isTouched,
     ValidationMode? mode,

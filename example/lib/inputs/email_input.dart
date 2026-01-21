@@ -23,7 +23,7 @@ class EmailInput extends StringField {
 
   // 4. CopyWith returning correct type
   @override
-  EmailInput copyWith({
+  EmailInput update({
     String? value,
     bool? isTouched,
     ValidationMode? mode,

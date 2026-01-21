@@ -14,18 +14,18 @@ class FilterCubit extends Cubit<FilterState> {
       );
 
   void categoryChanged(String? value) {
-    final field = state.category.copyWith(value: value, isTouched: true);
+    final field = state.category.update(value: value, isTouched: true);
     // Apply filters immediately on change
     _applyFilters(state.copyWith(category: field));
   }
 
   void priceChanged(RangeValues value) {
-    final field = state.priceRange.copyWith(value: value, isTouched: true);
+    final field = state.priceRange.update(value: value, isTouched: true);
     _applyFilters(state.copyWith(priceRange: field));
   }
 
   void stockChanged(bool value) {
-    final field = state.onlyInStock.copyWith(value: value, isTouched: true) as BoolField;
+    final field = state.onlyInStock.update(value: value, isTouched: true) as BoolField;
     _applyFilters(state.copyWith(onlyInStock: field));
   }
 

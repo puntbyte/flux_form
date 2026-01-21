@@ -14,7 +14,7 @@ class PasswordInput extends StringField {
   ];
 
   @override
-  PasswordInput copyWith({
+  PasswordInput update({
     String? value,
     bool? isTouched,
     ValidationMode? mode,

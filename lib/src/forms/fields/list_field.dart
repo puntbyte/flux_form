@@ -8,7 +8,7 @@ import 'package:flux_form/src/validation/validator_pipeline.dart';
 
 /// A field for managing dynamic lists with O(1) read performance.
 ///
-/// Subclasses must override [copyWith] to ensure mutation methods return
+/// Subclasses must override [update] to ensure mutation methods return
 /// the correct type.
 class ListField<T, F> extends Field<List<T>, F> with FieldCacheMixin<List<T>, F> {
   /// Internal cache that stores BOTH the combined error and the specific item error.
@@ -83,7 +83,7 @@ class ListField<T, F> extends Field<List<T>, F> with FieldCacheMixin<List<T>, F>
   ListField<T, F> addItem(T item) {
     final sanitized = SanitizerPipeline.sanitize(item, itemSanitizers);
     final newList = List<T>.from(value)..add(sanitized);
-    return copyWith(value: newList, isTouched: true);
+    return update(value: newList, isTouched: true);
   }
 
   ListField<T, F> setItem(int index, T newItem) {
@@ -91,17 +91,17 @@ class ListField<T, F> extends Field<List<T>, F> with FieldCacheMixin<List<T>, F>
     final sanitized = SanitizerPipeline.sanitize(newItem, itemSanitizers);
     final newList = List<T>.from(value);
     newList[index] = sanitized;
-    return copyWith(value: newList, isTouched: true);
+    return update(value: newList, isTouched: true);
   }
 
   ListField<T, F> removeItemAt(int index) {
     if (index < 0 || index >= value.length) return this;
     final newList = List<T>.from(value)..removeAt(index);
-    return copyWith(value: newList, isTouched: true);
+    return update(value: newList, isTouched: true);
   }
 
   @override
-  ListField<T, F> copyWith({
+  ListField<T, F> update({
     List<T>? value,
     bool? isTouched,
     ValidationMode? mode,

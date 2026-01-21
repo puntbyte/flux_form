@@ -22,7 +22,7 @@ class DynamicStringField extends StringField {
   List<Validator<String, String>> get validators => _validators;
 
   @override
-  DynamicStringField copyWith({
+  DynamicStringField update({
     String? value,
     bool? isTouched,
     ValidationMode? mode,

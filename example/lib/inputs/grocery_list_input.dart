@@ -32,7 +32,7 @@ class GroceryListInput extends ListField<String, String> {
   // If you need strict 'GroceryListInput' return types, you would wrapping logic here,
   // but usually it is not required for FluxForm states.
   @override
-  GroceryListInput copyWith({
+  GroceryListInput update({
     List<String>? value,
     bool? isTouched,
     ValidationMode? mode,

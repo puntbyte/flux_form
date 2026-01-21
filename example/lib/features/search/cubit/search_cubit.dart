@@ -57,7 +57,7 @@ class SearchCubit extends Cubit<SearchState> {
       emit(
         state.copyWith(
           isSearching: false,
-          searchBar: state.searchBar.copyWith(remoteError: 'API Error: $e'),
+          searchBar: state.searchBar.update(remoteError: 'API Error: $e'),
         ),
       );
     }

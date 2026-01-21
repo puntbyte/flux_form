@@ -7,7 +7,7 @@ class BoolField extends Field<bool, String> {
   const BoolField.touched({bool value = false}) : super.touched(value);
 
   @override
-  Field<bool, String> copyWith({
+  Field<bool, String> update({
     bool? value,
     bool? isTouched,
     ValidationMode? mode,

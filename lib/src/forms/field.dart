@@ -78,7 +78,7 @@ abstract class Field<T, E> {
   }
 
   /// Must be implemented by subclasses to return the correct type.
-  Field<T, E> copyWith({
+  Field<T, E> update({
     T? value,
     bool? isTouched,
     ValidationMode? mode,

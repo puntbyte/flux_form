@@ -40,7 +40,7 @@ class StringField extends Field<String, String> {
   }
 
   @override
-  StringField copyWith({
+  StringField update({
     String? value,
     bool? isTouched,
     ValidationMode? mode,

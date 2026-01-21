@@ -7,20 +7,20 @@ import 'package:flux_form/flux_form.dart';
 part 'login_state.dart';
 
 class LoginCubit extends Cubit<LoginState> {
-  LoginCubit() : super(LoginState());
+  LoginCubit() : super(const LoginState());
 
   void emailChanged(String value) {
     // ⚡️ FIX: Use copyWith with named parameter 'value'.
     // We set isPure: false to mark it as touched.
     // The 'mode' (Submit) is preserved from the existing state.email.
-    final newEmail = state.email.copyWith(value: value, isTouched: false);
+    final newEmail = state.email.update(value: value, isTouched: false);
     emit(state.copyWith(email: newEmail, status: FormStatus.initial));
   }
 
   void passwordChanged(String value) {
     // ⚡️ FIX: Use copyWith with named parameter 'value'.
     // The 'mode' (Change) is preserved.
-    final newPassword = state.password.copyWith(value: value, isTouched: false);
+    final newPassword = state.password.update(value: value, isTouched: false);
     emit(state.copyWith(password: newPassword, status: FormStatus.initial));
   }
 

@@ -11,7 +11,7 @@ class CategoryField extends Field<String?, String> {
   String? validate(String? value) => null;
 
   @override
-  CategoryField copyWith({
+  CategoryField update({
     String? value,
     bool? isTouched,
     ValidationMode? mode,
@@ -39,7 +39,7 @@ class PriceRangeField extends Field<RangeValues, String> {
   }
 
   @override
-  PriceRangeField copyWith({
+  PriceRangeField update({
     RangeValues? value,
     bool? isTouched,
     ValidationMode? mode,
