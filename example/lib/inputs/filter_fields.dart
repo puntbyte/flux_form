@@ -1,0 +1,52 @@
+import 'package:flutter/material.dart';
+import 'package:flux_form/flux_form.dart';
+
+/// A field for selecting a category (String value, nullable).
+class CategoryField extends Field<String?, String> {
+  const CategoryField.untouched({String? value}) : super.untouched(value);
+
+  const CategoryField.touched({String? value}) : super.touched(value);
+
+  @override
+  String? validate(String? value) => null;
+
+  @override
+  CategoryField copyWith({
+    String? value,
+    bool? isTouched,
+    ValidationMode? mode,
+    String? remoteError,
+  }) {
+    return isTouched ?? false
+        ? CategoryField.touched(value: value ?? this.value)
+        : CategoryField.untouched(value: value ?? this.value);
+  }
+}
+
+/// A field for price range (RangeValues).
+class PriceRangeField extends Field<RangeValues, String> {
+  // Default range: 0 to 1000
+  const PriceRangeField.untouched({RangeValues value = const RangeValues(0, 1000)})
+    : super.untouched(value);
+
+  const PriceRangeField.touched({RangeValues value = const RangeValues(0, 1000)})
+    : super.touched(value);
+
+  @override
+  String? validate(RangeValues value) {
+    if (value.start < 0) return 'Price cannot be negative';
+    return null;
+  }
+
+  @override
+  PriceRangeField copyWith({
+    RangeValues? value,
+    bool? isTouched,
+    ValidationMode? mode,
+    String? remoteError,
+  }) {
+    return isTouched ?? false
+        ? PriceRangeField.touched(value: value ?? this.value)
+        : PriceRangeField.untouched(value: value ?? this.value);
+  }
+}
