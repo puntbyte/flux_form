@@ -77,13 +77,21 @@ abstract class Field<T, E> {
     }
   }
 
-  /// Must be implemented by subclasses to return the correct type.
+  /// The generic method to evolve the field's state.
+  ///
+  /// This runs sanitizers and validation logic before returning the new instance.
   Field<T, E> update({
     T? value,
     bool? isTouched,
     ValidationMode? mode,
     E? remoteError,
   });
+
+  /// Convenience method for when a user types/interacts with the field.
+  ///
+  /// Automatically marks the field as [isTouched: true] and updates the value.
+  /// Use this in your Cubit's `onChanged` methods.
+  Field<T, E> replaceValue(T value) => update(value: value, isTouched: true);
 
   @override
   int get hashCode => Object.hash(value, isTouched, mode, _remoteError);
