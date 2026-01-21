@@ -1,12 +1,21 @@
 name: flux_form
-description: A starting point for Dart libraries or applications.
+description: >-
+  A type-safe, rule-based form state management library. Features composition-based validation, 
+  dynamic list support, sanitization, and smart UI state handling.
 version: 0.1.0
-# repository: https://github.com/my_org/my_repo
+
+repository: https://github.com/puntbyte/flux_form
+
+topics:
+  - form
+  - validation
+  - state-management
+  - input
+  - sanitization
 
 environment:
   sdk: ^3.10.0
 
-# Add regular dependencies here.
 dependencies:
   meta: ^1.16.0
 
