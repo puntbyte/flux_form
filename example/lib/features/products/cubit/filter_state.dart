@@ -31,7 +31,7 @@ class FilterState extends Equatable with FormMixin {
         filteredProducts = filteredProducts ?? allProducts;
 
   @override
-  List<Field> get fields => [category, priceRange, onlyInStock];
+  List<FormInput> get inputs => [category, priceRange, onlyInStock];
 
   // Helper to check if any filter is active
   bool get hasActiveFilters =>

@@ -1,22 +1,22 @@
 part of 'profile_cubit.dart';
 
 class ProfileState extends Equatable with FormMixin {
-  final StringField name;
+  final StringInput<String> name;
   final BoolField isEmployed;
-  final StringField company;
+  final StringInput<String> company;
   final FormStatus status;
 
   const ProfileState({
-    this.name = const StringField.untouched(),
+    this.name = const StringInput.untouched(),
     this.isEmployed = const BoolField.untouched(),
-    this.company = const StringField.untouched(),
+    this.company = const StringInput.untouched(),
     this.status = FormStatus.initial,
   });
 
   // --- FORM MIXIN ---
   // Registers fields for validation checks (isValid, isTouched, etc)
   @override
-  List<Field<dynamic, String>> get fields => [name, isEmployed, company];
+  List<FormInput<dynamic, String>> get inputs => [name, isEmployed, company];
 
   // --- SERIALIZATION ---
   // Easy export to JSON
@@ -27,9 +27,9 @@ class ProfileState extends Equatable with FormMixin {
   };
 
   ProfileState copyWith({
-    StringField? name,
+    StringInput<String>? name,
     BoolField? isEmployed,
-    StringField? company,
+    StringInput<String>? company,
     FormStatus? status,
   }) {
     return ProfileState(

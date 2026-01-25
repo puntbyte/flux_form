@@ -1,11 +1,11 @@
 import 'package:flux_form/flux_form.dart';
 
-class EmailInput extends StringField {
+class EmailInput extends StringInput<String> with InputMixin<String, String, EmailInput> {
   // 3. Clean Constructors (No rules passed to super!)
   // Note: We cannot use 'const' anymore because validation runs immediately.
-  const EmailInput.pure({super.value}) : super.untouched(mode: ValidationMode.onSubmit);
+  const EmailInput.pure({super.value}) : super.untouched(mode: ValidationMode.deferred);
 
-  const EmailInput.dirty({super.value}) : super.touched(mode: ValidationMode.onSubmit);
+  const EmailInput.dirty({super.value}) : super.touched(mode: ValidationMode.deferred);
 
   // 1. Define Rules ONCE here
   @override
@@ -25,20 +25,20 @@ class EmailInput extends StringField {
   @override
   EmailInput update({
     String? value,
-    bool? isTouched,
+    InputStatus? status,
     ValidationMode? mode,
     String? remoteError,
   }) {
-    // Logic to handle sanitization is inherited from GenericInput.sanitize
-    // But we need to call it here if we want to sanitize before creating.
-    // However, GenericInput.copyWith handles it.
-    // Since we are creating 'new EmailInput', we manually call sanitize if value changed.
+    final data = prepareUpdate(
+      value: value,
+      status: status,
+      mode: mode,
+      remoteError: remoteError,
+    );
 
-    final candidateValue = value ?? this.value;
-    final sanitized = value != null ? sanitize(candidateValue) : candidateValue;
-
-    return isTouched ?? false
-        ? EmailInput.pure(value: sanitized)
-        : EmailInput.dirty(value: sanitized);
+    return switch(data.status) {
+      InputStatus.touched => EmailInput.pure(value: data.value),
+      InputStatus.untouched => EmailInput.dirty(value: data.value),
+    };
   }
 }

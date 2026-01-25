@@ -15,7 +15,7 @@ class RegisterState extends Equatable with FormMixin {
        password = password ?? const AuthField.untouched();
 
   @override
-  List<Field> get fields => [email, password];
+  List<FormInput> get inputs => [email, password];
 
   RegisterState copyWith({
     AuthField? email,

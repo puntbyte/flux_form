@@ -1,4 +1,5 @@
 // lib/src/validation/validator_pipeline.dart
+
 import 'package:flux_form/src/validation/validator.dart';
 
 typedef OnValidateStart<T> = void Function(T value);
@@ -17,6 +18,7 @@ class ValidatorPipeline {
       final result = validator.validate(value);
       if (result != null) return result;
     }
+
     return null;
   }
 

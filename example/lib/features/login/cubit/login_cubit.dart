@@ -13,14 +13,14 @@ class LoginCubit extends Cubit<LoginState> {
     // ⚡️ FIX: Use copyWith with named parameter 'value'.
     // We set isPure: false to mark it as touched.
     // The 'mode' (Submit) is preserved from the existing state.email.
-    final newEmail = state.email.update(value: value, isTouched: false);
+    final newEmail = state.email.replaceValue(value);
     emit(state.copyWith(email: newEmail, status: FormStatus.initial));
   }
 
   void passwordChanged(String value) {
     // ⚡️ FIX: Use copyWith with named parameter 'value'.
     // The 'mode' (Change) is preserved.
-    final newPassword = state.password.update(value: value, isTouched: false);
+    final newPassword = state.password.replaceValue(value);
     emit(state.copyWith(password: newPassword, status: FormStatus.initial));
   }
 

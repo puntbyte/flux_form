@@ -6,7 +6,7 @@ import 'package:flux_form/flux_form.dart';
 part 'booking_state.dart';
 
 class BookingCubit extends Cubit<BookingState> {
-  BookingCubit() : super(BookingState());
+  BookingCubit() : super(const BookingState());
 
   void dateChanged({String? start, String? end}) {
     // 1. Get current values if not updated

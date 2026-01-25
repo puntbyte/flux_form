@@ -13,19 +13,17 @@ class LoginState extends Equatable with FormMixin {
        password = password ?? const PasswordInput.untouched();
 
   @override
-  List<Field<String, String>> get fields => [email, password];
+  List<FormInput<String, String>> get inputs => [email, password];
 
   LoginState copyWith({
     EmailInput? email,
     PasswordInput? password,
     FormStatus? status,
-  }) {
-    return LoginState(
-      email: email ?? this.email,
-      password: password ?? this.password,
-      status: status ?? this.status,
-    );
-  }
+  }) => LoginState(
+    email: email ?? this.email,
+    password: password ?? this.password,
+    status: status ?? this.status,
+  );
 
   @override
   List<Object> get props => [email, password, status];

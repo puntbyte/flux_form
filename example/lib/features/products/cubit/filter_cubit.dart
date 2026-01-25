@@ -8,24 +8,21 @@ import 'package:flux_form/flux_form.dart';
 part 'filter_state.dart';
 
 class FilterCubit extends Cubit<FilterState> {
-  FilterCubit()
-    : super(
-        FilterState(allProducts: _products),
-      );
+  FilterCubit() : super(FilterState(allProducts: _products));
 
   void categoryChanged(String? value) {
-    final field = state.category.update(value: value, isTouched: true);
+    final input = state.category.replaceValue(value);
     // Apply filters immediately on change
-    _applyFilters(state.copyWith(category: field));
+    _applyFilters(state.copyWith(category: input));
   }
 
   void priceChanged(RangeValues value) {
-    final field = state.priceRange.update(value: value, isTouched: true);
+    final field = state.priceRange.replaceValue(value);
     _applyFilters(state.copyWith(priceRange: field));
   }
 
   void stockChanged(bool value) {
-    final field = state.onlyInStock.update(value: value, isTouched: true) as BoolField;
+    final field = state.onlyInStock.replaceValue(value);
     _applyFilters(state.copyWith(onlyInStock: field));
   }
 
