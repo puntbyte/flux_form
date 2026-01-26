@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:example/inputs/email_input.dart';
-import 'package:example/inputs/password_input.dart';
+import 'package:example/features/login/inputs/email_input.dart';
+import 'package:example/features/login/inputs/password_input.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flux_form/flux_form.dart';
 
