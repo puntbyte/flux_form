@@ -4,9 +4,9 @@ import 'package:flux_form/flux_form.dart';
 /// A field for selecting a category (String value, nullable).
 class CategoryField extends FormInput<String?, String>
     with InputMixin<String?, String, CategoryField> {
-  const CategoryField.untouched({String? value}) : super.untouched(value);
+  const CategoryField.untouched({super.value}) : super.untouched();
 
-  const CategoryField.touched({String? value}) : super.touched(value);
+  const CategoryField.touched({super.value}) : super.touched();
 
   @override
   CategoryField update({
@@ -25,11 +25,9 @@ class CategoryField extends FormInput<String?, String>
 class PriceRangeField extends FormInput<RangeValues, String>
     with InputMixin<RangeValues, String, PriceRangeField> {
   // Default range: 0 to 1000
-  const PriceRangeField.untouched({RangeValues value = const RangeValues(0, 1000)})
-    : super.untouched(value);
+  const PriceRangeField.untouched({super.value = const RangeValues(0, 1000)}) : super.untouched();
 
-  const PriceRangeField.touched({RangeValues value = const RangeValues(0, 1000)})
-    : super.touched(value);
+  const PriceRangeField.touched({super.value = const RangeValues(0, 1000)}) : super.touched();
 
   @override
   String? validate(RangeValues value) {

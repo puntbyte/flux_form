@@ -1,3 +1,4 @@
+import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/sanitization/sanitizer.dart';
@@ -7,18 +8,18 @@ import 'package:flux_form/src/validation/validator_pipeline.dart';
 
 class MapInput<K, V, E> extends FormInput<Map<K, V>, E> {
   const MapInput.untouched({
-    Map<K, V> value = const {},
+    super.value = const {},
     super.mode,
     super.errorCache,
-  }) : super.untouched(value);
+  }) : super.untouched();
 
   const MapInput.touched({
-    Map<K, V> value = const {},
+    super.value = const {},
     super.initialValue,
     super.mode,
     super.errorCache,
     super.remoteError,
-  }) : super.touched(value);
+  }) : super.touched();
 
   MapInput._(super.data) : super.fromData();
 

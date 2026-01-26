@@ -1,6 +1,6 @@
 import 'package:flux_form/flux_form.dart';
 
-class PasswordInput extends StringInput<String> with InputMixin<String, String, PasswordInput> {
+class PasswordInput extends StringInputBase<String> with InputMixin<String, String, PasswordInput> {
   const PasswordInput.untouched({super.value}) : super.untouched(mode: ValidationMode.live);
 
   const PasswordInput.touched({super.value}) : super.touched(mode: ValidationMode.live);

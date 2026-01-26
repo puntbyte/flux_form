@@ -1,3 +1,4 @@
+import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/form_input.dart';
 
@@ -7,18 +8,18 @@ import 'package:flux_form/src/forms/form_input.dart';
 /// [E] is the error type (e.g. String, Enum).
 class DateTimeInput<E> extends FormInput<DateTime?, E> {
   const DateTimeInput.untouched({
-    DateTime? value,
+    super.value,
     super.mode,
     super.errorCache,
-  }) : super.untouched(value);
+  }) : super.untouched();
 
   const DateTimeInput.touched({
-    DateTime? value,
+    super.value,
     super.initialValue,
     super.mode,
     super.errorCache,
     super.remoteError,
-  }) : super.touched(value);
+  }) : super.touched();
 
   DateTimeInput._(super.data) : super.fromData();
 

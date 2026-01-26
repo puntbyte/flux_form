@@ -1,23 +1,44 @@
 // lib/forms/inputs/bool_input.dart
 
+import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/forms/mixins/input_mixin.dart';
+import 'package:meta/meta.dart';
 
-class BoolInput<E> extends FormInput<bool, E> with InputMixin<bool, E, BoolInput<E>> {
-  const BoolInput.untouched({
-    bool value = false,
+abstract class BoolInputBase<E> extends FormInput<bool, E> {
+  const BoolInputBase.untouched({
+    super.value = false,
     super.mode,
     super.errorCache,
-  }) : super.untouched(value);
+  }) : super.untouched();
 
-  const BoolInput.touched({
-    bool value = false,
+  const BoolInputBase.touched({
+    super.value = false,
     super.initialValue,
     super.mode,
     super.errorCache,
     super.remoteError,
-  }) : super.touched(value);
+  }) : super.touched();
+
+  @protected
+  BoolInputBase.fromData(super.data) : super.fromData();
+}
+
+final class BoolInput<E> extends BoolInputBase<E> with InputMixin<bool, E, BoolInput<E>> {
+  const BoolInput.untouched({
+    super.value = false,
+    super.mode,
+    super.errorCache,
+  }) : super.untouched();
+
+  const BoolInput.touched({
+    super.value = false,
+    super.initialValue,
+    super.mode,
+    super.errorCache,
+    super.remoteError,
+  }) : super.touched();
 
   BoolInput._(super.data) : super.fromData();
 

@@ -2,7 +2,7 @@ import 'package:flux_form/flux_form.dart';
 
 /// A specialized input for Search logic.
 /// Demonstrates Composition: We define rules/sanitizers via getters.
-class SearchInput extends StringInput<String> with InputMixin<String, String, SearchInput> {
+class SearchInput extends StringInputBase<String> with InputMixin<String, String, SearchInput> {
   const SearchInput.untouched({super.value}) : super.untouched();
 
   const SearchInput.touched({

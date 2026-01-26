@@ -1,3 +1,4 @@
+import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/form_input.dart';
 
@@ -39,6 +40,4 @@ mixin InputMixin<T, E, I extends FormInput<T, E>> on FormInput<T, E> {
 
   /// Changes the validation mode dynamically.
   I setMode(ValidationMode mode) => update(mode: mode) as I;
-
-  I transform(T Function() function) => update(value: function(), status: .touched) as I;
 }

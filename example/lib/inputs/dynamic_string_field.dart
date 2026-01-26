@@ -1,7 +1,7 @@
 import 'package:flux_form/flux_form.dart';
 
 /// Helper class for Ad-Hoc validation logic inside Cubits.
-class DynamicStringField extends StringInput<String> {
+class DynamicStringField extends StringInputBase<String> with InputMixin<String, String, DynamicStringField> {
   final List<Validator<String, String>> _validators;
 
   const DynamicStringField.untouched({

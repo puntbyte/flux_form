@@ -2,9 +2,9 @@ import 'package:flux_form/flux_form.dart';
 
 /// A simple field for Checkboxes/Switches
 class BoolField extends FormInput<bool, String> with InputMixin<bool, String, BoolField> {
-  const BoolField.untouched({bool value = false}) : super.untouched(value);
+  const BoolField.untouched({super.value = false}) : super.untouched();
 
-  const BoolField.touched({bool value = false}) : super.touched(value);
+  const BoolField.touched({super.value = false}) : super.touched();
 
   @override
   FormInput<bool, String> update({

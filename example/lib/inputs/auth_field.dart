@@ -6,9 +6,9 @@ class AuthField extends FormInput<String, AuthError> {
   // We allow rules to be passed in, just like StringField
   final List<Validator<String, AuthError>> rules;
 
-  const AuthField.untouched({String value = '', this.rules = const []}) : super.untouched(value);
+  const AuthField.untouched({super.value = '', this.rules = const []}) : super.untouched();
 
-  const AuthField.touched({String value = '', this.rules = const []}) : super.touched(value);
+  const AuthField.touched({super.value = '', this.rules = const []}) : super.touched();
 
 
   @override

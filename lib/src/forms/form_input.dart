@@ -1,32 +1,14 @@
 // lib/src/forms/form_input.dart
 
 import 'package:flux_form/src/forms/enums/form_status.dart';
+import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
+import 'package:flux_form/src/forms/models/input_data.dart';
 import 'package:flux_form/src/sanitization/sanitizer.dart';
 import 'package:flux_form/src/sanitization/sanitizer_pipeline.dart';
 import 'package:flux_form/src/validation/validator.dart';
 import 'package:flux_form/src/validation/validator_pipeline.dart';
 import 'package:meta/meta.dart';
-
-class InputData<T, E> {
-  final T value;
-  final T initialValue;
-  final InputStatus status;
-  final ValidationMode mode;
-  final E? remoteError;
-  final E? errorCache;
-
-  const InputData({
-    required this.value,
-    required this.initialValue,
-    required this.status,
-    required this.mode,
-    required this.remoteError,
-    required this.errorCache,
-  });
-}
-
-enum InputStatus { touched, untouched }
 
 @immutable
 abstract class FormInput<T, E> {
@@ -50,8 +32,8 @@ abstract class FormInput<T, E> {
 
   /// Creates a field in its initial state [isTouched] false).
   /// Sets [initialValue] to [value].
-  const FormInput.untouched(
-    this.value, {
+  const FormInput.untouched({
+    required this.value,
     this.mode = ValidationMode.live,
     E? errorCache,
   }) : initialValue = value,
@@ -62,8 +44,8 @@ abstract class FormInput<T, E> {
   /// Creates a field that has been modified (isTouched: true).
   ///
   /// [initialValue] must be passed to persist history, otherwise it defaults to [value].
-  const FormInput.touched(
-    this.value, {
+  const FormInput.touched({
+    required this.value,
     T? initialValue,
     this.mode = ValidationMode.live,
     E? remoteError,

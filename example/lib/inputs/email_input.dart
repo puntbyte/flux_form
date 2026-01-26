@@ -1,6 +1,6 @@
 import 'package:flux_form/flux_form.dart';
 
-class EmailInput extends StringInput<String> with InputMixin<String, String, EmailInput> {
+class EmailInput extends StringInputBase<String> with InputMixin<String, String, EmailInput> {
   // 3. Clean Constructors (No rules passed to super!)
   // Note: We cannot use 'const' anymore because validation runs immediately.
   const EmailInput.pure({super.value}) : super.untouched(mode: ValidationMode.deferred);

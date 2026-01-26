@@ -1,3 +1,4 @@
+import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/sanitization/sanitizer.dart';
@@ -12,21 +13,21 @@ class ListInput<T, E> extends FormInput<List<T>, E> {
   final E? _firstItemError;
 
   const ListInput.untouched({
-    List<T> value = const [],
+    super.value = const [],
     super.mode,
     super.errorCache,
   }) : _firstItemError = null,
-       super.untouched(value);
+       super.untouched();
 
   const ListInput.touched({
-    List<T> value = const [],
+    super.value = const [],
     super.initialValue,
     super.mode,
     super.errorCache,
     super.remoteError,
     E? firstItemError,
   }) : _firstItemError = firstItemError,
-       super.touched(value);
+       super.touched();
 
   List<Validator<T, E>> get itemValidators => [];
 
