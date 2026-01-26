@@ -45,6 +45,8 @@ class SearchInput extends StringInputBase<String> with InputMixin<String, String
       ),
 
       InputStatus.untouched => SearchInput.untouched(value: data.value),
+      // TODO: Handle this case.
+      InputStatus.validating => throw UnimplementedError(),
     };
   }
 }

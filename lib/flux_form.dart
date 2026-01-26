@@ -17,6 +17,7 @@ export 'src/forms/form_validator.dart';
 // Inputs
 export 'src/forms/inputs/bool_input.dart';
 export 'src/forms/inputs/date_time_input.dart';
+export 'src/forms/inputs/generic_input.dart';
 export 'src/forms/inputs/list_input.dart';
 export 'src/forms/inputs/map_input.dart';
 export 'src/forms/inputs/number_input.dart';

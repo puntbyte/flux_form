@@ -9,7 +9,7 @@ class LoginState extends Equatable with FormMixin {
     EmailInput? email,
     PasswordInput? password,
     this.status = FormStatus.initial,
-  }) : email = email ?? const EmailInput.pure(),
+  }) : email = email ?? const EmailInput.untouched(),
        password = password ?? const PasswordInput.untouched();
 
   @override

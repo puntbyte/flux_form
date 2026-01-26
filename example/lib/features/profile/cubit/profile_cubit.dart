@@ -19,7 +19,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     final newName = DynamicStringField.touched(
       value: sanitized,
       validators: const [RequiredValidator('Name is required')],
-    );
+    ) as StringInput<String>;
 
     emit(state.copyWith(name: newName));
   }
@@ -55,7 +55,7 @@ class ProfileCubit extends Cubit<ProfileState> {
           validator: const RequiredValidator('Company is required if employed'),
         ),
       ],
-    );
+    ) as StringInput<String>;
   }
 
   void submit() {

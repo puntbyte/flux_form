@@ -3,6 +3,7 @@
 import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 
+/// Data class for storing input state.
 class InputData<T, E> {
   final T value;
   final T initialValue;

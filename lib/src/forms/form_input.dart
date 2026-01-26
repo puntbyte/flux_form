@@ -123,6 +123,13 @@ abstract class FormInput<T, E> {
     }
   }
 
+  /// Returns a list of ALL validation errors for the current value.
+  ///
+  /// This bypasses [_cachedError] (which only stores the first error)
+  /// and re-runs the full pipeline.
+  /// Use this for UI elements like Password Strength meters.
+  List<E> get detailedErrors => ValidatorPipeline.validateAll(value, validators);
+
   /// Centralizes the logic for updating a field.
   @protected
   InputData<T, E> prepareUpdate({
@@ -134,33 +141,30 @@ abstract class FormInput<T, E> {
     // 1. Resolve Value
     final rawValue = value ?? this.value;
     final valueChanged = value != null && value != this.value;
-
-    // 2. Sanitize
     final sanitizedValue = value != null ? sanitize(rawValue) : rawValue;
 
-    // 3. Validate (Smart Caching)
+    // 2. Compute Local Error
     final computedError = valueChanged || _cachedError == null
         ? validate(sanitizedValue)
         : _cachedError;
 
-    // 4. Resolve Touched
-    //final effectiveTouched = (isTouched ?? false) || this.isTouched;
     final effectiveStatus = status ?? this.status;
 
-    // 5. Resolve Remote Error
-    // Logic: Explicit override > Clear on change > Preserve stale
+    // 2. Resolve Remote Error
     E? effectiveRemote;
     if (remoteError != null) {
-      // Explicit new error takes precedence
+      // A) Explicit new external error
       effectiveRemote = remoteError;
     } else if (effectiveStatus == InputStatus.untouched) {
-      // ⚡️ Logic Fix: If we are resetting to Untouched, clear remote errors.
+      // B) Resetting to untouched clears external errors (Logic Fix)
       effectiveRemote = null;
     } else if (valueChanged) {
-      // ⚡️ Logic Fix: If value changed, assume old remote error is stale.
+      // C) Input changed:
+      // If the field was invalid due to server (e.g. "Email taken"),
+      // and user changes it, we assume the server error is resolved/stale.
       effectiveRemote = null;
     } else {
-      // Preserve existing
+      // D) No change, preserve existing server error
       effectiveRemote = _remoteError;
     }
 

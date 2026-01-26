@@ -50,7 +50,7 @@ class InventoryPage extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final itemValue = state.groceries.value[index];
                         // 3. Specific Item Error (String?)
-                        final itemError = state.groceries.getItemError(index);
+                        final itemError = state.groceries.itemErrorAt(index);
 
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,

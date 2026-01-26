@@ -25,9 +25,8 @@ class PasswordInput extends StringInputBase<String> with InputMixin<String, Stri
       remoteError: remoteError
     );
 
-    return switch(data.status) {
-      InputStatus.touched => PasswordInput.untouched(value: value ?? this.value),
-      InputStatus.untouched => PasswordInput.touched(value: value ?? this.value),
-    };
+    return isTouched
+        ? PasswordInput.touched(value: value ?? this.value)
+        : PasswordInput.untouched(value: value ?? this.value);
   }
 }

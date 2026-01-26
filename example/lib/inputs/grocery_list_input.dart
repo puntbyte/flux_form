@@ -3,9 +3,9 @@ import 'package:flux_form/flux_form.dart';
 class GroceryListInput extends ListInput<String, String> {
   // 4. Constructors (Clean - just setting Mode)
   // We use ValidationMode.change (Live) so user sees errors immediately when adding items
-  const GroceryListInput.pure({super.value}) : super.untouched(mode: ValidationMode.live);
+  const GroceryListInput.untouched({super.value}) : super.untouched(mode: ValidationMode.live);
 
-  const GroceryListInput.dirty({super.value}) : super.touched(mode: ValidationMode.live);
+  const GroceryListInput.touched({super.value}) : super.touched(mode: ValidationMode.live);
 
   // 1. Define List-Level Rules (e.g. Min 3 items total)
   @override
@@ -35,7 +35,7 @@ class GroceryListInput extends ListInput<String, String> {
     String? remoteError,
   }) {
     return isTouched
-        ? GroceryListInput.pure(value: value ?? this.value)
-        : GroceryListInput.dirty(value: value ?? this.value);
+        ? GroceryListInput.untouched(value: value ?? this.value)
+        : GroceryListInput.touched(value: value ?? this.value);
   }
 }

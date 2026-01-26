@@ -1,4 +1,4 @@
-// lib/src/rules/general_validators.dart
+// lib/src/validation/validators/general_validators.dart
 
 import 'package:flux_form/src/validation/validator.dart';
 

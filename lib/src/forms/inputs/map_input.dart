@@ -1,12 +1,36 @@
+// lib/src/forms/inputs/map_input.dart
+
 import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/form_input.dart';
+import 'package:flux_form/src/forms/mixins/input_mixin.dart';
 import 'package:flux_form/src/sanitization/sanitizer.dart';
 import 'package:flux_form/src/sanitization/sanitizer_pipeline.dart';
 import 'package:flux_form/src/validation/validator.dart';
 import 'package:flux_form/src/validation/validator_pipeline.dart';
+import 'package:meta/meta.dart';
 
-class MapInput<K, V, E> extends FormInput<Map<K, V>, E> {
+abstract class MapInputBase<K, V, E> extends FormInput<Map<K, V>, E> {
+  const MapInputBase.untouched({
+    super.value = const {},
+    super.mode,
+    super.errorCache,
+  }) : super.untouched();
+
+  const MapInputBase.touched({
+    super.value = const {},
+    super.initialValue,
+    super.mode,
+    super.errorCache,
+    super.remoteError,
+  }) : super.touched();
+
+  @protected
+  MapInputBase.fromData(super.data) : super.fromData();
+}
+
+class MapInput<K, V, E> extends MapInputBase<K, V, E>
+    with InputMixin<Map<K, V>, E, MapInput<K, V, E>> {
   const MapInput.untouched({
     super.value = const {},
     super.mode,
@@ -24,9 +48,10 @@ class MapInput<K, V, E> extends FormInput<Map<K, V>, E> {
   MapInput._(super.data) : super.fromData();
 
   /// Validates every VALUE in the map
-  List<Validator<V, E>> get valueValidators => [];
+  List<Validator<V, E>> get valueValidators => const [];
 
-  List<Sanitizer<V>> get valueSanitizers => [];
+  /// Sanitizes every VALUE in the map
+  List<Sanitizer<V>> get valueSanitizers => const [];
 
   @override
   MapInput<K, V, E> update({
@@ -60,22 +85,37 @@ class MapInput<K, V, E> extends FormInput<Map<K, V>, E> {
     return null;
   }
 
-  E? getValueError(K key) {
+  /// Returns the error for a specific key
+  E? valueErrorAt(K key) {
     if (!value.containsKey(key)) return null;
-
     return ValidatorPipeline.validate(value[key] as V, valueValidators);
+  }
+
+  @override
+  Map<K, V> sanitize(Map<K, V> value) {
+    var result = super.sanitize(value);
+
+    if (valueSanitizers.isNotEmpty) {
+      // Create a new map with sanitized values
+      result = result.map(
+        (key, val) => MapEntry(key, SanitizerPipeline.sanitize(val, valueSanitizers)),
+      );
+    }
+
+    return result;
   }
 
   MapInput<K, V, E> putItem(K key, V item) {
     final sanitized = SanitizerPipeline.sanitize(item, valueSanitizers);
-    final newMap = Map<K, V>.from(value);
+    final newMap = Map<K, V>.of(value); // Creates a new reference
     newMap[key] = sanitized;
 
     return update(value: newMap, status: InputStatus.touched);
   }
 
   MapInput<K, V, E> removeItem(K key) {
-    final newMap = Map<K, V>.from(value)..remove(key);
+    if (!value.containsKey(key)) return this;
+    final newMap = Map<K, V>.of(value)..remove(key);
 
     return update(value: newMap, status: InputStatus.touched);
   }

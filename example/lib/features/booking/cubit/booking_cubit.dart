@@ -22,7 +22,7 @@ class BookingCubit extends Cubit<BookingState> {
         RequiredValidator('Start date required'),
         // Optional: Add regex for YYYY-MM-DD
       ],
-    );
+    ) as StringInput<String>;
 
     final endInput = DynamicStringField.touched(
       value: e,
@@ -32,7 +32,7 @@ class BookingCubit extends Cubit<BookingState> {
         // "End" must be greater than "Start" (s)
         GreaterThanValidator(s, 'End date must be after Start date'),
       ],
-    );
+    ) as StringInput<String>;
 
     emit(state.copyWith(start: startInput, end: endInput));
   }

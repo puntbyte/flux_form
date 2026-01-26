@@ -16,6 +16,5 @@ mixin FormMixin {
   bool get isTouched => FormValidator.isTouched(inputs);
 
   /// Returns a list of specific inputs that failed validation.
-  List<FormInput<dynamic, dynamic>> get invalidInputs =>
-      FormValidator.validateGranularly(inputs);
+  List<FormInput<dynamic, dynamic>> get invalidInputs => FormValidator.validateGranularly(inputs);
 }

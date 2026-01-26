@@ -1,17 +1,19 @@
 name: flux_form
 description: >-
-  A type-safe, rule-based form state management library. Features composition-based validation, 
-  dynamic list support, sanitization, and smart UI state handling.
-version: 0.1.0
+  A modular, type-safe form state management library. Features FormGroup aggregation, built-in 
+  validators, sanitization pipelines, and smart UI error handling.
+version: 0.2.0
 
 repository: https://github.com/puntbyte/flux_form
+homepage: https://github.com/puntbyte/flux_form
+issue_tracker: https://github.com/puntbyte/flux_form/issues
 
 topics:
   - form
   - validation
   - state-management
-  - input
   - sanitization
+  - productivity
 
 environment:
   sdk: ^3.10.0

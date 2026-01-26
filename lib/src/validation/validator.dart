@@ -2,7 +2,7 @@
 
 import 'package:meta/meta.dart';
 
-/// A single synchronous validation rule.
+/// A synchronous validation rule.
 /// [T] is the type of value being validated.
 /// [E] is the type of error returned (e.g., String or FluxFault).
 @immutable
@@ -15,7 +15,7 @@ abstract class Validator<T, E> {
   E? validate(T value);
 }
 
-/// A single asynchronous validation rule.
+/// A asynchronous validation rule.
 /// Useful for checking databases, APIs, etc.
 @immutable
 abstract class AsyncValidator<T, E> {

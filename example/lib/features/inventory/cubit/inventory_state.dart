@@ -11,7 +11,7 @@ class InventoryState extends Equatable with FormMixin {
     ListInput<String, String>? groceries,
     this.status = FormStatus.initial,
   }) : // Initialize with our specific subclass that contains all the rules
-       groceries = groceries ?? GroceryListInput.pure();
+       groceries = groceries ?? GroceryListInput.untouched();
 
   @override
   List<FormInput> get inputs => [groceries];

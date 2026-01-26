@@ -3,9 +3,9 @@ import 'package:flux_form/flux_form.dart';
 class EmailInput extends StringInputBase<String> with InputMixin<String, String, EmailInput> {
   // 3. Clean Constructors (No rules passed to super!)
   // Note: We cannot use 'const' anymore because validation runs immediately.
-  const EmailInput.pure({super.value}) : super.untouched(mode: ValidationMode.deferred);
+  const EmailInput.untouched({super.value}) : super.untouched(mode: ValidationMode.deferred);
 
-  const EmailInput.dirty({super.value}) : super.touched(mode: ValidationMode.deferred);
+  const EmailInput.touched({super.value}) : super.touched(mode: ValidationMode.deferred);
 
   // 1. Define Rules ONCE here
   @override
@@ -37,8 +37,9 @@ class EmailInput extends StringInputBase<String> with InputMixin<String, String,
     );
 
     return switch(data.status) {
-      InputStatus.touched => EmailInput.pure(value: data.value),
-      InputStatus.untouched => EmailInput.dirty(value: data.value),
+      InputStatus.touched => EmailInput.untouched(value: data.value),
+      InputStatus.untouched => EmailInput.touched(value: data.value),
+      InputStatus.validating => throw UnimplementedError(),
     };
   }
 }

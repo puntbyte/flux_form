@@ -10,12 +10,16 @@ import 'package:flux_form/src/forms/form_validator.dart';
 abstract class FormGroup {
   const FormGroup();
 
-  /// The list of inputs in this form.
-  /// You must override this to register your fields.
-  List<FormInput<dynamic, dynamic>> get inputs;
+  /// Defines the inputs with their associated keys (field names).
+  Map<String, FormInput<dynamic, dynamic>> get namedInputs;
+
+  /// The list of inputs, derived automatically.
+  List<FormInput<dynamic, dynamic>> get inputs => namedInputs.values.toList();
 
   // --- Logic ---
   bool get isValid => FormValidator.validate(inputs);
+
+  bool get isNotValid => !isValid;
 
   bool get isUntouched => FormValidator.isUntouched(inputs);
 
@@ -24,8 +28,9 @@ abstract class FormGroup {
   /// Returns the first error found (useful for general snackbars).
   dynamic get firstError => FormValidator.firstError(inputs);
 
-  // --- Serialization ---
-  // This should be implemented by the subclass if JSON is needed,
-  // OR we can't automagically know the keys without reflection.
-  Map<String, dynamic> get values => {};
+  /// Automatically generates a Map of current values.
+  /// Uses a "Collection For" to ensure a [Map<String, dynamic>] is returned.
+  Map<String, dynamic> get values => {
+    for (final entry in namedInputs.entries) entry.key: entry.value.value,
+  };
 }

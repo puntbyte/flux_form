@@ -31,6 +31,10 @@ mixin InputMixin<T, E, I extends FormInput<T, E>> on FormInput<T, E> {
   /// Manually marks the field as untouched.
   I markUntouched() => update(status: InputStatus.untouched) as I;
 
+  /// Sets the status to [InputStatus.validating].
+  /// Call this immediately before awaiting an API call.
+  I markValidating() => update(status: InputStatus.validating) as I;
+
   /// Injects an external error (e.g., from an API response).
   /// This will take precedence over local validation.
   I setRemoteError(E error) => update(remoteError: error) as I;
@@ -40,4 +44,23 @@ mixin InputMixin<T, E, I extends FormInput<T, E>> on FormInput<T, E> {
 
   /// Changes the validation mode dynamically.
   I setMode(ValidationMode mode) => update(mode: mode) as I;
+
+  /// A helper to handle the result of an async validation.
+  ///
+  /// Usage:
+  /// ```dart
+  /// final result = await myApi.checkUsername(state.username.value);
+  /// emit(state.copyWith(
+  ///   username: state.username.resolveAsyncValidation(result)
+  /// ));
+  /// ```
+  I resolveAsyncValidation(E? error) {
+    if (error != null) {
+      // If failed, set the remote error and mark as touched
+      return update(remoteError: error, status: InputStatus.touched) as I;
+    } else {
+      // If success, clear any previous remote errors and mark as touched
+      return update(remoteError: null, status: InputStatus.touched) as I;
+    }
+  }
 }
