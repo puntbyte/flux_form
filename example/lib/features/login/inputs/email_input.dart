@@ -1,45 +1,44 @@
+// features/login/inputs/email_input.dart
+
+import 'package:example/features/login/models/auth_error.dart';
 import 'package:flux_form/flux_form.dart';
 
-class EmailInput extends StringInputBase<String> with InputMixin<String, String, EmailInput> {
-  // 3. Clean Constructors (No rules passed to super!)
-  // Note: We cannot use 'const' anymore because validation runs immediately.
+class EmailInput extends StringInputBase<AuthError> with InputMixin<String, AuthError, EmailInput> {
+  // Use Deferred mode: Error only shows after submit (or if remote error exists)
   const EmailInput.untouched({super.value}) : super.untouched(mode: ValidationMode.deferred);
 
-  const EmailInput.touched({super.value}) : super.touched(mode: ValidationMode.deferred);
+  const EmailInput.touched({super.value, super.remoteError})
+    : super.touched(mode: ValidationMode.deferred);
 
-  // 1. Define Rules ONCE here
+  // Private constructor for updates
+  EmailInput._(super.data) : super.fromData();
+
   @override
-  List<Validator<String, String>> get validators => [
-    const RequiredValidator('Email is required'),
-    const EmailValidator('Invalid email format'),
+  List<Validator<String, AuthError>> get validators => [
+    const RequiredValidator(AuthError.required),
+    const EmailValidator(AuthError.invalidEmail),
   ];
 
-  // 2. Define Sanitizers ONCE here (Optional)
   @override
   List<Sanitizer<String>> get sanitizers => [
     const TrimSanitizer(),
     const ToLowerCaseSanitizer(),
   ];
 
-  // 4. CopyWith returning correct type
   @override
   EmailInput update({
     String? value,
     InputStatus? status,
     ValidationMode? mode,
-    String? remoteError,
+    AuthError? remoteError,
   }) {
-    final data = prepareUpdate(
-      value: value,
-      status: status,
-      mode: mode,
-      remoteError: remoteError,
+    return EmailInput._(
+      prepareUpdate(
+        value: value,
+        status: status,
+        mode: mode,
+        remoteError: remoteError,
+      ),
     );
-
-    return switch(data.status) {
-      InputStatus.touched => EmailInput.untouched(value: data.value),
-      InputStatus.untouched => EmailInput.touched(value: data.value),
-      InputStatus.validating => throw UnimplementedError(),
-    };
   }
 }

@@ -10,7 +10,7 @@ export 'src/forms/enums/validation_mode.dart';
 
 // Form Core
 export 'src/forms/form_error.dart';
-export 'src/forms/form_group.dart';
+export 'src/forms/form_schema.dart';
 export 'src/forms/form_input.dart';
 export 'src/forms/form_validator.dart';
 

@@ -1,4 +1,4 @@
-// lib/src/forms/form_group.dart
+// lib/src/forms/form_schema.dart
 
 import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/forms/form_validator.dart';
@@ -7,8 +7,8 @@ import 'package:flux_form/src/forms/form_validator.dart';
 ///
 /// Users extend this class and define getters for their inputs.
 /// This provides Type Safety (via the getters) AND Group Logic (via the list).
-abstract class FormGroup {
-  const FormGroup();
+abstract class FormShema {
+  const FormShema();
 
   /// Defines the inputs with their associated keys (field names).
   Map<String, FormInput<dynamic, dynamic>> get namedInputs;

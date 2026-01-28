@@ -1,30 +1,18 @@
 part of 'login_cubit.dart';
 
-class LoginState extends Equatable with FormMixin {
-  final EmailInput email;
-  final PasswordInput password;
+class LoginState {
+  final LoginShema shema;
   final FormStatus status;
 
   const LoginState({
-    EmailInput? email,
-    PasswordInput? password,
+    this.shema = const LoginShema(),
     this.status = FormStatus.initial,
-  }) : email = email ?? const EmailInput.untouched(),
-       password = password ?? const PasswordInput.untouched();
+  });
 
-  @override
-  List<FormInput<String, String>> get inputs => [email, password];
-
-  LoginState copyWith({
-    EmailInput? email,
-    PasswordInput? password,
-    FormStatus? status,
-  }) => LoginState(
-    email: email ?? this.email,
-    password: password ?? this.password,
-    status: status ?? this.status,
-  );
-
-  @override
-  List<Object> get props => [email, password, status];
+  LoginState copyWith({LoginShema? schema, FormStatus? status}) {
+    return LoginState(
+      shema: schema ?? shema,
+      status: status ?? this.status,
+    );
+  }
 }

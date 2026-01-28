@@ -1,6 +1,5 @@
-import 'package:equatable/equatable.dart';
-import 'package:example/features/login/inputs/email_input.dart';
-import 'package:example/features/login/inputs/password_input.dart';
+import 'package:example/features/login/forms/login_schema.dart';
+import 'package:example/features/login/models/auth_error.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flux_form/flux_form.dart';
 
@@ -10,33 +9,58 @@ class LoginCubit extends Cubit<LoginState> {
   LoginCubit() : super(const LoginState());
 
   void emailChanged(String value) {
-    // ⚡️ FIX: Use copyWith with named parameter 'value'.
-    // We set isPure: false to mark it as touched.
-    // The 'mode' (Submit) is preserved from the existing state.email.
-    final newEmail = state.email.replaceValue(value);
-    emit(state.copyWith(email: newEmail, status: FormStatus.initial));
+    // 1. Update Input -> 2. Update Form
+    emit(
+      state.copyWith(
+        schema: state.shema.copyWith(email: state.shema.email.replaceValue(value)),
+        status: FormStatus.initial, // Reset global status on edit
+      ),
+    );
   }
 
   void passwordChanged(String value) {
-    // ⚡️ FIX: Use copyWith with named parameter 'value'.
-    // The 'mode' (Change) is preserved.
-    final newPassword = state.password.replaceValue(value);
-    emit(state.copyWith(password: newPassword, status: FormStatus.initial));
+    emit(
+      state.copyWith(
+        schema: state.shema.copyWith(password: state.shema.password.replaceValue(value)),
+        status: FormStatus.initial,
+      ),
+    );
   }
 
   Future<void> submit() async {
-    // If invalid, we mark status as failed.
-    // This triggers 'resolveFault' to show errors even for Submit Mode inputs.
-    if (state.isNotValid) {
+    // 1. Validate: If invalid, state.form.isValid is false.
+    // We check if it's NOT valid.
+    if (state.shema.isNotValid) {
+      // 2. Mark Failed: This reveals 'Deferred' errors (like Email).
       emit(state.copyWith(status: FormStatus.failed));
       return;
     }
 
     emit(state.copyWith(status: FormStatus.submitting));
 
-    // Simulate API
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Simulate Network Call
+      await Future.delayed(const Duration(seconds: 2));
 
-    emit(state.copyWith(status: FormStatus.succeeded));
+      // 3. Simulate Server Error (e.g., Email taken)
+      if (state.shema.email.value == 'taken@gmail.com') {
+        // Inject remote error back into the field
+        final newEmail = state.shema.email.setRemoteError(AuthError.emailTaken);
+
+        emit(
+          state.copyWith(
+            schema: state.shema.copyWith(email: newEmail),
+            status: FormStatus.failed,
+          ),
+        );
+        return;
+      }
+
+      // Success
+      print('Submitted: ${state.shema.values}');
+      emit(state.copyWith(status: FormStatus.succeeded));
+    } catch (_) {
+      emit(state.copyWith(status: FormStatus.failed));
+    }
   }
 }

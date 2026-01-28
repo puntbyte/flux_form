@@ -22,7 +22,7 @@ Designed to be **state-management agnostic**, it works seamlessly with:
 - **⚡️ "Batteries Included" Validators:** A rich library of pre-built rules (`Required`, `Email`, 
   `MinLength`, `Match`, `When`, `Any`, etc.) so you don't have to write Regex manually.
 
-- **🏗 FormGroup Architecture:** Group inputs together to handle overall validity (`isValid`), 
+- **🏗 FormSchema Architecture:** Group inputs together to handle overall validity (`isValid`), 
   "Touched" status, and serialization (`values`) automatically.
 
 - **🧼 Sanitization Pipeline:** Automatically `Trim`, `LowerCase`, `RemoveSpaces`, or format inputs
@@ -153,8 +153,8 @@ class EmailInput extends StringInput<AuthError>
 
 > **Note on `update`**: If you prefer not to use a private constructor, you can implement `update` using a switch/if statement to return `EmailInput.touched(...)` or `EmailInput.untouched(...)` manually, but passing `InputData` to a private constructor is significantly less error-prone.
 
-### 3. Define the Group (Optional)
-Grouping inputs into a `FormGroup` is **optional**.
+### 3. Define the Schema (Optional)
+Grouping inputs into a `FormSchema` is **optional**.
 
 *   **When to skip:** If you have a single search bar or a simple toggle.
 *   **When to use:** For Login forms, Profiles, or Wizards.
@@ -165,7 +165,7 @@ Using a group provides:
 3.  **Clean State:** Your Bloc/Provider state only needs to hold one variable (`LoginForm`) instead of many.
 
 ```dart
-class LoginForm extends FormGroup {
+class LoginForm extends FormSchema {
   final EmailInput email;
   final PasswordInput password;
 
@@ -197,12 +197,12 @@ class LoginForm extends FormGroup {
 Flux Form is architecture-agnostic. It provides the **data structure**, while your state management library handles the **data flow**.
 
 Below are examples showing two approaches:
-1.  **Using `FormGroup` (Recommended):** Best for scaling. Validation and serialization are handled automatically.
+1.  **Using `FormSchema` (Recommended):** Best for scaling. Validation and serialization are handled automatically.
 2.  **Using Individual Inputs:** Good for simple forms or when you don't need group-level logic.
 
 ### 1. 🧊 Cubit (Bloc Library)
 
-#### Option A: Using FormGroup
+#### Option A: Using FormSchema
 The State holds the `LoginForm`. Validation checks are cleaner (`state.isValid`).
 
 ```dart
@@ -264,7 +264,7 @@ class LoginCubit extends Cubit<LoginState> {
 
 ### 2. 🧱 Bloc (Event-Driven)
 
-#### Option A: Using FormGroup
+#### Option A: Using FormSchema
 
 ```dart
 class LoginBloc extends Bloc<LoginEvent, LoginForm> {
@@ -309,7 +309,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
 ### 3. 💧 Riverpod
 
-#### Option A: Using FormGroup
+#### Option A: Using FormSchema
 The `Notifier` manages the `LoginForm` directly.
 
 ```dart
@@ -353,8 +353,8 @@ class LoginNotifier extends Notifier<LoginState> {
 
 ### 4. 🐹 MobX
 
-#### Option A: Using FormGroup
-You treat the `FormGroup` as an observable. Since FluxForm inputs are immutable, you replace the form instance on updates.
+#### Option A: Using FormSchema
+You treat the `FormSchema` as an observable. Since FluxForm inputs are immutable, you replace the form instance on updates.
 
 ```dart
 class LoginStore = _LoginStore with _$LoginStore;
@@ -402,7 +402,7 @@ abstract class _LoginStore with Store {
 
 ### 5. 📡 Signals
 
-#### Option A: Using FormGroup
+#### Option A: Using FormSchema
 
 ```dart
 final loginForm = signal(const LoginForm());
@@ -439,7 +439,7 @@ void onEmailChanged(String val) {
 
 ### 6. 🏗 Provider (ChangeNotifier)
 
-#### Option A: Using FormGroup
+#### Option A: Using FormSchema
 
 ```dart
 class LoginProvider extends ChangeNotifier {
@@ -473,7 +473,7 @@ class LoginProvider extends ChangeNotifier {
 
 ### 7. 🍦 Vanilla (setState)
 
-#### Option A: Using FormGroup
+#### Option A: Using FormSchema
 
 ```dart
 class _LoginScreenState extends State<LoginScreen> {
@@ -683,7 +683,7 @@ Because Flux Form moves state out of the widget tree:
 Flux Form relies on three core enums to manage the lifecycle of forms and inputs. Understanding these is key to mastering the UI logic.
 
 #### `FormStatus`
-Represents the overall state of a `FormGroup` submission.
+Represents the overall state of a `FormSchema` submission.
 *   `initial`: The form has not been touched or submitted.
 *   `submitting`: Async action in progress (show spinner).
 *   `succeeded`: Action completed (navigate away).
@@ -834,7 +834,7 @@ This is the engine room of custom inputs.
 *   **Type Safety:** It takes generic `I` (Implementation) to ensure that `emailInput.replaceValue(...)` returns an `EmailInput`, not a generic `FormInput`.
 
 #### `FormMixin`
-*   **Use Case:** If you are not using `FormGroup` and are manually adding inputs to a Bloc state.
+*   **Use Case:** If you are not using `FormSchema` and are manually adding inputs to a Bloc state.
 *   **Function:** It provides `isValid`, `isTouched`, and `invalidInputs` getters by iterating over a list of inputs you define.
 
 ---
@@ -953,7 +953,7 @@ Because Flux Form moves state management *out* of the widget tree and into your 
 | **Widget Type**       | `StatefulWidget` (usually)        | `StatelessWidget` (preferred)        |
 | **Validation Source** | `validator: (val) => ...`         | `field.validators` list              |
 | **Error Display**     | Triggered by `formKey.validate()` | `errorText: field.displayError(...)` |
-| **Form State**        | `GlobalKey<FormState>`            | `FormGroup` class                    |
+| **Form State**        | `GlobalKey<FormState>`            | `FormSchema` class                   |
 | **Controllers**       | Required for text access          | Optional (Value is in State)         |
 
 ---

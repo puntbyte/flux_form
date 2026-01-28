@@ -6,15 +6,15 @@ class FormValidator {
   const FormValidator._();
 
   static bool validate(List<FormInput<dynamic, dynamic>> inputs) {
-    return inputs.every((field) => field.isValid);
+    return inputs.every((input) => input.isValid);
   }
 
   static bool isUntouched(List<FormInput<dynamic, dynamic>> inputs) {
-    return inputs.every((field) => field.isUntouched);
+    return inputs.every((input) => input.isUntouched);
   }
 
   static bool isTouched(List<FormInput<dynamic, dynamic>> inputs) {
-    return inputs.any((field) => field.isTouched);
+    return inputs.any((input) => input.isTouched);
   }
 
   /// Returns a list of all inputs that are currently invalid.

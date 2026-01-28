@@ -1,3 +1,5 @@
+// features/login/view/login_page.dart
+
 import 'package:example/features/login/cubit/login_cubit.dart';
 import 'package:example/widgets/app_drawer.dart';
 import 'package:flutter/material.dart';
@@ -11,11 +13,12 @@ class LoginPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => LoginCubit(),
       child: Scaffold(
-        appBar: AppBar(title: const Text('Login Demo')),
+        appBar: AppBar(title: const Text('Flux Form Demo')),
         drawer: const AppDrawer(),
         body: Padding(
           padding: const EdgeInsets.all(24),
           child: BlocConsumer<LoginCubit, LoginState>(
+            listenWhen: (p, c) => p.status != c.status,
             listener: (context, state) {
               if (state.status.isSucceeded) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -23,75 +26,85 @@ class LoginPage extends StatelessWidget {
                 );
               }
             },
-
-            builder: (context, state) => _buildContent(state, context),
+            builder: (context, state) => _LoginForm(state),
           ),
         ),
       ),
     );
   }
+}
 
-  Column _buildContent(LoginState state, BuildContext context) {
+class _LoginForm extends StatelessWidget {
+  final LoginState state;
+
+  const _LoginForm(this.state);
+
+  @override
+  Widget build(BuildContext context) {
+    final form = state.shema;
+    final cubit = context.read<LoginCubit>();
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 8,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Email: Submit Mode (Error shows on click)'),
-
-        _buildEmailField(state, context),
-
+        // --- EMAIL INPUT ---
+        TextFormField(
+          initialValue: form.email.value, // Important for resets
+          decoration: InputDecoration(
+            labelText: 'Email',
+            hintText: 'Try "taken@gmail.com"',
+            // displayError handles ValidationMode.deferred automatically!
+            errorText: form.email.displayError(state.status)?.message(context),
+            suffixIcon: _buildSuffix(form.email.isValid),
+          ),
+          onChanged: cubit.emailChanged,
+        ),
         const SizedBox(height: 16),
 
-        const Text('Password: Live Mode (Error shows while typing)'),
+        // --- PASSWORD INPUT ---
+        TextFormField(
+          initialValue: form.password.value,
+          decoration: InputDecoration(
+            labelText: 'Password',
+            // displayError handles ValidationMode.live automatically!
+            errorText: form.password.displayError(state.status)?.message(context),
+            suffixIcon: _buildSuffix(form.password.isValid),
+          ),
+          obscureText: true,
+          onChanged: cubit.passwordChanged,
+        ),
 
-        buildPasswordField(state, context),
+        // Bonus: Password Strength Indicator (Multi-Error Check)
+        if (form.password.isTouched && form.password.isNotValid)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text(
+              'Password Strength: Low',
+              style: TextStyle(color: Colors.orange),
+            ),
+          ),
 
         const SizedBox(height: 24),
 
-        if (state.status.isSubmitting)
-          const Center(child: CircularProgressIndicator())
-        else
-          _buildSubmitButton(state, context),
+        // --- SUBMIT BUTTON ---
+        ElevatedButton(
+          onPressed: state.status.isSubmitting ? null : cubit.submit,
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          child: state.status.isSubmitting
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Login'),
+        ),
       ],
     );
   }
 
-  Widget _buildEmailField(LoginState state, BuildContext context) {
-    return TextFormField(
-      decoration: InputDecoration(
-        labelText: 'Email',
-        // resolveFault handles the logic:
-        // - Submit Mode: Returns null until status is Failed.
-        errorText: state.email.displayError(state.status),
-      ),
-      onChanged: (value) => context.read<LoginCubit>().emailChanged(value),
-    );
-  }
-
-  Widget buildPasswordField(LoginState state, BuildContext context) {
-    return TextFormField(
-      decoration: InputDecoration(
-        labelText: 'Password',
-        // - Change Mode: Returns error immediately if dirty.
-        errorText: state.password.displayError(state.status),
-      ),
-      obscureText: true,
-      onChanged: (value) => context.read<LoginCubit>().passwordChanged(value),
-    );
-  }
-
-  Widget _buildSubmitButton(LoginState state, BuildContext context) {
-    if (state.status.isSubmitting) {
-      return const Center(child: CircularProgressIndicator());
-    } else {
-      return SizedBox(
-        width: double.infinity,
-        height: 48,
-        child: ElevatedButton(
-          onPressed: () => context.read<LoginCubit>().submit(),
-          child: const Text('Submit'),
-        ),
-      );
-    }
+  Widget? _buildSuffix(bool isValid) {
+    return isValid ? const Icon(Icons.check_circle, color: Colors.green) : null;
   }
 }
