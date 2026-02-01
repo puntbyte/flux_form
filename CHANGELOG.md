@@ -1,3 +1,9 @@
+## 0.4.1
+
+📦 **Maintenance**
+
+- **Metadata**: Updated package description to better emphasize state management agnosticism.
+
 ## 0.4.0
 
 🚀 **The Namespaced API & Inheritance Update**
