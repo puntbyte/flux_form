@@ -59,7 +59,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flux_form: ^0.4.0
+  flux_form: ^0.4.1
 ```
 
 > #### ⚠️ Note on Stability: 
