@@ -2,7 +2,7 @@ name: flux_form
 description: >-
   A modular, type-safe form management library. Features input aggregation, sanitization pipelines,
   declarative validation, smart UI error handling, and State-management agnostic.
-version: 0.4.0
+version: 0.4.1
 
 repository: https://github.com/puntbyte/flux_form
 homepage: https://github.com/puntbyte/flux_form
