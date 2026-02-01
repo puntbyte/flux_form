@@ -366,16 +366,21 @@ class _PasswordStrengthValidator<E> extends StringValidator<E> {
   E? validate(String value) {
     if (value.isEmpty) return null;
 
-    var upp = 0, low = 0, dig = 0, spec = 0;
+    var upp = 0;
+    var low = 0;
+    var dig = 0;
+    var spec = 0;
+
     for (final ch in value.runes) {
-      if (ch >= 0x41 && ch <= 0x5A)
+      if (ch >= 0x41 && ch <= 0x5A) {
         upp++; // A-Z
-      else if (ch >= 0x61 && ch <= 0x7A)
+      } else if (ch >= 0x61 && ch <= 0x7A) {
         low++; // a-z
-      else if (ch >= 0x30 && ch <= 0x39)
+      } else if (ch >= 0x30 && ch <= 0x39) {
         dig++; // 0-9
-      else
+      } else {
         spec++;
+      }
     }
 
     if (upp < minUpper) return error;
