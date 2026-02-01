@@ -97,7 +97,7 @@ abstract class FormInput<T, E> {
   bool get isPristine => value == initialValue;
 
   /// Returns true if async validation is currently running
-  bool get isValidating => false;
+  bool get isValidating => status == InputStatus.validating;
 
   /// Define your validation logic here.
   /// This is called automatically by the constructor.

@@ -3,7 +3,7 @@
 import 'package:example/features/login/models/auth_error.dart';
 import 'package:flux_form/flux_form.dart';
 
-class EmailInput extends StringInputBase<AuthError> with InputMixin<String, AuthError, EmailInput> {
+class EmailInput extends StringInput<AuthError> with InputMixin<String, AuthError, EmailInput> {
   // Use Deferred mode: Error only shows after submit (or if remote error exists)
   const EmailInput.untouched({super.value}) : super.untouched(mode: ValidationMode.deferred);
 
@@ -15,14 +15,14 @@ class EmailInput extends StringInputBase<AuthError> with InputMixin<String, Auth
 
   @override
   List<Validator<String, AuthError>> get validators => [
-    const RequiredValidator(AuthError.required),
-    const EmailValidator(AuthError.invalidEmail),
+    const StringValidator.notEmpty(AuthError.required),
+    const FormatValidator.email(AuthError.invalidEmail),
   ];
 
   @override
   List<Sanitizer<String>> get sanitizers => [
-    const TrimSanitizer(),
-    const ToLowerCaseSanitizer(),
+    const StringSanitizer.trim(),
+    const StringSanitizer.toLowerCase(),
   ];
 
   @override

@@ -1,15 +1,15 @@
 part of 'profile_cubit.dart';
 
 class ProfileState extends Equatable with FormMixin {
-  final StringInput<String> name;
+  final SimpleStringInput<String> name;
   final BoolField isEmployed;
-  final StringInput<String> company;
+  final SimpleStringInput<String> company;
   final FormStatus status;
 
   const ProfileState({
-    this.name = const StringInput.untouched(),
+    this.name = const SimpleStringInput.untouched(),
     this.isEmployed = const BoolField.untouched(),
-    this.company = const StringInput.untouched(),
+    this.company = const SimpleStringInput.untouched(),
     this.status = FormStatus.initial,
   });
 
@@ -27,9 +27,9 @@ class ProfileState extends Equatable with FormMixin {
   };
 
   ProfileState copyWith({
-    StringInput<String>? name,
+    SimpleStringInput<String>? name,
     BoolField? isEmployed,
-    StringInput<String>? company,
+    SimpleStringInput<String>? company,
     FormStatus? status,
   }) {
     return ProfileState(

@@ -13,13 +13,13 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   void nameChanged(String value) {
     // 1. Sanitize
-    final sanitized = SanitizerPipeline.sanitize(value, [const TrimSanitizer()]);
+    final sanitized = SanitizerPipeline.sanitize(value, [const StringSanitizer.trim()]);
 
     // 2. Update with Dynamic Validation
     final newName = DynamicStringField.touched(
       value: sanitized,
-      validators: const [RequiredValidator('Name is required')],
-    ) as StringInput<String>;
+      validators: const [StringValidator.notEmpty('Name is required')],
+    ) as SimpleStringInput<String>;
 
     emit(state.copyWith(name: newName));
   }
@@ -45,17 +45,17 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   /// Helper to construct the Company field with dynamic logic
-  StringInput<String> _buildCompanyField(String value, {required bool isEmployed}) {
+  SimpleStringInput<String> _buildCompanyField(String value, {required bool isEmployed}) {
     return DynamicStringField.touched(
       value: value,
       validators: [
         // 4. Using WhenValidator (was WhenRule)
-        WhenValidator(
-          condition: isEmployed,
-          validator: const RequiredValidator('Company is required if employed'),
+        LogicValidator.when(
+          condition: () => isEmployed,
+          validator: const StringValidator.notEmpty('Company is required if employed'),
         ),
       ],
-    ) as StringInput<String>;
+    ) as SimpleStringInput<String>;
   }
 
   void submit() {

@@ -6,31 +6,7 @@ import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/forms/mixins/input_mixin.dart';
 import 'package:meta/meta.dart';
 
-abstract class DateTimeInputBase<E> extends FormInput<DateTime?, E> {
-  const DateTimeInputBase.untouched({
-    super.value,
-    super.mode,
-    super.errorCache,
-  }) : super.untouched();
-
-  const DateTimeInputBase.touched({
-    super.value,
-    super.initialValue,
-    super.mode,
-    super.errorCache,
-    super.remoteError,
-  }) : super.touched();
-
-  @protected
-  DateTimeInputBase.fromData(super.data) : super.fromData();
-}
-
-/// A specialized input for [DateTime] values.
-///
-/// Handles nullable [DateTime?] because date fields often start empty.
-/// [E] is the error type (e.g. String, Enum).
-final class DateTimeInput<E> extends DateTimeInputBase<E>
-    with InputMixin<DateTime?, E, DateTimeInput<E>> {
+abstract class DateTimeInput<E> extends FormInput<DateTime?, E> {
   const DateTimeInput.untouched({
     super.value,
     super.mode,
@@ -45,15 +21,39 @@ final class DateTimeInput<E> extends DateTimeInputBase<E>
     super.remoteError,
   }) : super.touched();
 
-  DateTimeInput._(super.data) : super.fromData();
+  @protected
+  DateTimeInput.fromData(super.data) : super.fromData();
+}
+
+/// A specialized input for [DateTime] values.
+///
+/// Handles nullable [DateTime?] because date fields often start empty.
+/// [E] is the error type (e.g. String, Enum).
+final class SimpleDateTimeInput<E> extends DateTimeInput<E>
+    with InputMixin<DateTime?, E, SimpleDateTimeInput<E>> {
+  const SimpleDateTimeInput.untouched({
+    super.value,
+    super.mode,
+    super.errorCache,
+  }) : super.untouched();
+
+  const SimpleDateTimeInput.touched({
+    super.value,
+    super.initialValue,
+    super.mode,
+    super.errorCache,
+    super.remoteError,
+  }) : super.touched();
+
+  SimpleDateTimeInput._(super.data) : super.fromData();
 
   @override
-  DateTimeInput<E> update({
+  SimpleDateTimeInput<E> update({
     DateTime? value,
     InputStatus? status,
     ValidationMode? mode,
     E? remoteError,
-  }) => DateTimeInput._(
+  }) => SimpleDateTimeInput._(
     prepareUpdate(
       value: value,
       status: status,

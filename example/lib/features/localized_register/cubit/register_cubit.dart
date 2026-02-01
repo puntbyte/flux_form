@@ -19,8 +19,8 @@ class RegisterCubit extends Cubit<RegisterState> {
       value: value,
       rules: const [
         // Notice we pass Enum values instead of Strings here
-        RequiredValidator(AuthError.empty),
-        EmailValidator(AuthError.invalidEmail),
+        StringValidator.notEmpty(AuthError.empty),
+        FormatValidator.email(AuthError.invalidEmail),
       ],
     );
     emit(state.copyWith(email: emailInput));
@@ -30,10 +30,10 @@ class RegisterCubit extends Cubit<RegisterState> {
     final passInput = AuthField.touched(
       value: value,
       rules: [
-        const RequiredValidator(AuthError.empty),
-        const MinLengthValidator(6, AuthError.shortPassword),
+        const StringValidator.notEmpty(AuthError.empty),
+        const StringValidator.minLength(6, AuthError.shortPassword),
         // Custom Regex Rule with Enum Error
-        RegexValidator(RegExp('[!@#]'), AuthError.noSpecialChar),
+        StringValidator.pattern(RegExp('[!@#]'), AuthError.noSpecialChar),
       ],
     );
     emit(state.copyWith(password: passInput));

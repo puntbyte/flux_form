@@ -6,31 +6,8 @@ import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/forms/mixins/input_mixin.dart';
 import 'package:meta/meta.dart';
 
-/// A generic input for numeric values.
-/// Can be used as [NumberInput<int>] or [NumberInput<double>].
-abstract class NumberInputBase<T extends num, E> extends FormInput<T, E> {
-  const NumberInputBase.untouched({
-    required super.value,
-    super.mode,
-    super.errorCache,
-  }) : super.untouched();
-
-  const NumberInputBase.touched({
-    required super.value,
-    super.initialValue,
-    super.mode,
-    super.errorCache,
-    super.remoteError,
-  }) : super.touched();
-
-  @protected
-  NumberInputBase.fromData(super.data) : super.fromData();
-}
-
-/// A generic input for numeric values.
-/// Can be used as [NumberInput<int>] or [NumberInput<double>].
-final class NumberInput<T extends num, E> extends NumberInputBase<T, E>
-    with InputMixin<T, E, NumberInput<T, E>> {
+/// A generic input for numeric values. Can be used as [NumberInput<int>] or [NumberInput<double>].
+abstract class NumberInput<T extends num, E> extends FormInput<T, E> {
   const NumberInput.untouched({
     required super.value,
     super.mode,
@@ -45,15 +22,36 @@ final class NumberInput<T extends num, E> extends NumberInputBase<T, E>
     super.remoteError,
   }) : super.touched();
 
-  NumberInput._(super.data) : super.fromData();
+  @protected
+  NumberInput.fromData(super.data) : super.fromData();
+}
+
+/// A generic input for numeric values. Can be used as [NumberInput<int>] or [NumberInput<double>].
+final class SimpleNumberInput<T extends num, E> extends NumberInput<T, E>
+    with InputMixin<T, E, SimpleNumberInput<T, E>> {
+  const SimpleNumberInput.untouched({
+    required super.value,
+    super.mode,
+    super.errorCache,
+  }) : super.untouched();
+
+  const SimpleNumberInput.touched({
+    required super.value,
+    super.initialValue,
+    super.mode,
+    super.errorCache,
+    super.remoteError,
+  }) : super.touched();
+
+  SimpleNumberInput._(super.data) : super.fromData();
 
   @override
-  NumberInput<T, E> update({
+  SimpleNumberInput<T, E> update({
     T? value,
     InputStatus? status,
     ValidationMode? mode,
     E? remoteError,
-  }) => NumberInput._(
+  }) => SimpleNumberInput._(
     prepareUpdate(
       value: value,
       status: status,
@@ -62,7 +60,7 @@ final class NumberInput<T extends num, E> extends NumberInputBase<T, E>
     ),
   );
 
-  NumberInput<T, E> increment([num amount = 1]) {
+  SimpleNumberInput<T, E> increment([num amount = 1]) {
     final newValue = value + amount;
 
     final casted = switch (value) {
@@ -73,5 +71,5 @@ final class NumberInput<T extends num, E> extends NumberInputBase<T, E>
     return update(value: casted, status: .touched);
   }
 
-  NumberInput<T, E> decrement([num amount = 1]) => increment(-amount);
+  SimpleNumberInput<T, E> decrement([num amount = 1]) => increment(-amount);
 }

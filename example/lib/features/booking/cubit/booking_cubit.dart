@@ -19,20 +19,20 @@ class BookingCubit extends Cubit<BookingState> {
     final startInput = DynamicStringField.touched(
       value: s,
       validators: const [
-        RequiredValidator('Start date required'),
+        StringValidator.notEmpty('Start date required'),
         // Optional: Add regex for YYYY-MM-DD
       ],
-    ) as StringInput<String>;
+    ) as SimpleStringInput<String>;
 
     final endInput = DynamicStringField.touched(
       value: e,
       validators: [
-        const RequiredValidator('End date required'),
+        const StringValidator.notEmpty('End date required'),
         // 3. Cross Field Logic:
         // "End" must be greater than "Start" (s)
-        GreaterThanValidator(s, 'End date must be after Start date'),
+        StringValidator.notContains(s, 'End date must be after Start date'),
       ],
-    ) as StringInput<String>;
+    ) as SimpleStringInput<String>;
 
     emit(state.copyWith(start: startInput, end: endInput));
   }

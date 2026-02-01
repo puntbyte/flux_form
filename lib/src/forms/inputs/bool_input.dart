@@ -4,28 +4,10 @@ import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/forms/mixins/input_mixin.dart';
+import 'package:flux_form/src/validation/validator.dart';
 import 'package:meta/meta.dart';
 
-abstract class BoolInputBase<E> extends FormInput<bool, E> {
-  const BoolInputBase.untouched({
-    super.value = false,
-    super.mode,
-    super.errorCache,
-  }) : super.untouched();
-
-  const BoolInputBase.touched({
-    super.value = false,
-    super.initialValue,
-    super.mode,
-    super.errorCache,
-    super.remoteError,
-  }) : super.touched();
-
-  @protected
-  BoolInputBase.fromData(super.data) : super.fromData();
-}
-
-final class BoolInput<E> extends BoolInputBase<E> with InputMixin<bool, E, BoolInput<E>> {
+abstract class BoolInput<E> extends FormInput<bool, E> {
   const BoolInput.untouched({
     super.value = false,
     super.mode,
@@ -40,22 +22,51 @@ final class BoolInput<E> extends BoolInputBase<E> with InputMixin<bool, E, BoolI
     super.remoteError,
   }) : super.touched();
 
-  BoolInput._(super.data) : super.fromData();
+  @protected
+  BoolInput.fromData(super.data) : super.fromData();
+}
 
-  BoolInput<E> toggle() => update(value: !value);
+final class SimpleBoolInput<E> extends BoolInput<E> with InputMixin<bool, E, SimpleBoolInput<E>> {
+  final List<Validator<bool, E>> _validators;
+
+  const SimpleBoolInput.untouched({
+    super.value = false,
+    super.mode,
+    super.errorCache,
+    List<Validator<bool, E>> validators = const [],
+  }) : _validators = validators,
+       super.untouched();
+
+  const SimpleBoolInput.touched({
+    super.value = false,
+    super.initialValue,
+    super.mode,
+    super.errorCache,
+    super.remoteError,
+    List<Validator<bool, E>> validators = const [],
+  }) : _validators = validators,
+       super.touched();
+
+  SimpleBoolInput._(super.data, this._validators) : super.fromData();
 
   @override
-  BoolInput<E> update({
+  List<Validator<bool, E>> get validators => _validators;
+
+  SimpleBoolInput<E> toggle() => update(value: !value);
+
+  @override
+  SimpleBoolInput<E> update({
     bool? value,
     InputStatus? status,
     ValidationMode? mode,
     E? remoteError,
-  }) => BoolInput._(
+  }) => SimpleBoolInput._(
     prepareUpdate(
       value: value,
       status: status,
       mode: mode,
       remoteError: remoteError,
     ),
+    _validators,
   );
 }

@@ -1,8 +1,8 @@
 import 'package:flux_form/flux_form.dart';
 
-/// A specialized input for Search logic.
-/// Demonstrates Composition: We define rules/sanitizers via getters.
-class SearchInput extends StringInputBase<String> with InputMixin<String, String, SearchInput> {
+/// A specialized input for Search logic. Demonstrates Composition: We define rules/sanitizers via
+/// getters.
+class SearchInput extends StringInput<String> with InputMixin<String, String, SearchInput> {
   const SearchInput.untouched({super.value}) : super.untouched();
 
   const SearchInput.touched({
@@ -14,13 +14,13 @@ class SearchInput extends StringInputBase<String> with InputMixin<String, String
   // 1. Sanitization: Automatically remove leading/trailing spaces
   @override
   List<Sanitizer<String>> get sanitizers => [
-    const TrimSanitizer(),
+    const StringSanitizer.trim(),
   ];
 
   // 2. Validation: Ensure user types enough characters
   @override
   List<Validator<String, String>> get validators => [
-    const MinLengthValidator(2, 'Type at least 2 characters'),
+    const StringValidator.minLength(2, 'Type at least 2 characters'),
   ];
 
   @override
@@ -37,7 +37,7 @@ class SearchInput extends StringInputBase<String> with InputMixin<String, String
       remoteError: remoteError,
     );
 
-    return switch(data.status) {
+    return switch (data.status) {
       InputStatus.touched => SearchInput.touched(
         value: data.value,
         initialValue: data.initialValue,
@@ -45,7 +45,6 @@ class SearchInput extends StringInputBase<String> with InputMixin<String, String
       ),
 
       InputStatus.untouched => SearchInput.untouched(value: data.value),
-      // TODO: Handle this case.
       InputStatus.validating => throw UnimplementedError(),
     };
   }

@@ -1,8 +1,53 @@
+## 0.4.0
+
+🚀 **The Namespaced API & Inheritance Update**
+
+This release significantly improves Developer Experience (DX) by introducing a discoverable, namespaced API for validation and sanitization, and refining the input inheritance hierarchy for better reusability.
+
+### ⚠️ Breaking Changes
+- **Validator API**:
+    - Replaced standalone validator classes with **Namespaced Factory Methods** for better IDE discoverability.
+    - Example: `RequiredValidator(e)` → **`StringValidator.required(e)`**.
+    - Example: `EmailValidator(e)` → **`FormatValidator.email(e)`**.
+    - Example: `MinLengthValidator(e)` → **`StringValidator.minLength(e)`**.
+- **Logic Validators**:
+    - `WhenValidator` is now accessed via **`LogicValidator.when`**.
+    - **Critical Logic Change**: The `condition` argument is now a `bool Function()` (callback) instead of a raw `bool`. This enables **Lazy/Reactive** evaluation of cross-field logic at runtime.
+- **Input Inheritance**:
+    - Primitive inputs (`StringInput`, `NumberInput`, `BoolInput`, `ListInput`, `MapInput`, `DateTimeInput`) are now **`abstract`** base classes intended for inheritance (e.g., creating `EmailInput`).
+    - For standalone/one-off usage without inheritance, use the new **`Simple`** variants (e.g., `SimpleStringInput`, `SimpleBoolInput`).
+
+### ✨ New Features
+- **Namespaced Validators**:
+    - **`BoolValidator`**: Boolean rules (isTrue, isFalse, equals).
+    - **`StringValidator`**: Basic rules (required, minLength, pattern).
+    - **`ObjectValidator`**: Custom validation logic (e.g., `custom`).
+    - **`FormatValidator`**: Complex formats (email, url, creditCard, uuid, hexColor).
+    - **`NumberValidator`**: Numeric constraints (min, max, positive).
+    - **`ListValidator`**: Collection rules (minLength, unique).
+    - **`LogicValidator`**: Reactive flow control (`when`, `unless`, `any`, `custom`).
+    - **`ComparableValidator`**: Date/Time and Duration checks.
+    - **`FileValidator`**: Size and extension checks.
+- **Namespaced Sanitizers**:
+    - **`StringSanitizer`**: `trim`, `toLowerCase`, `digitsOnly`, `capitalize`, `removeSpaces`.
+    - **`ListSanitizer`**: `unique`, `sort`, `remove`.
+    - **`NumberSanitizer`**: `round`, `ceil`, `clamp`.
+- **Simple Inputs**:
+    - Added `SimpleStringInput`, `SimpleNumberInput`, etc., which accept validators and sanitizers directly via constructor for quick composition.
+- **Utilities**:
+    - Added **`FormSubmitter<T>`** to standardize submission lifecycles (`onStart`, `onSubmit`, `onSuccess`, `onError`).
+
+### ⚡️ Improvements
+- **Regex**: Strengthened `EmailValidator` regex and added strict protocol mode to `UrlValidator`.
+- **Organization**: Codebase restructured to group related rules into specific files to reduce global namespace pollution.
+
 ## 0.3.0
 
 ✨ **The Schema Update**
 
-This release addresses a common naming collision in the Flutter ecosystem. By renaming `FormGroup` to `FormSchema`, we create a clear separation between your UI Widgets (e.g., `LoginForm`) and your Data Logic (`LoginSchema`).
+This release addresses a common naming collision in the Flutter ecosystem. By renaming `FormGroup` 
+to `FormSchema`, we create a clear separation between your UI Widgets (e.g., `LoginForm`) and your 
+Data Logic (`LoginSchema`).
 
 ### ⚠️ Breaking Changes
 - **Core Architecture**:

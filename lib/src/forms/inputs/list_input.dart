@@ -12,18 +12,18 @@ import 'package:flux_form/src/validation/validator_pipeline.dart';
 import 'package:meta/meta.dart';
 
 /// Base class to avoid naming conflicts with the concrete implementation.
-abstract class ListInputBase<T, E> extends FormInput<List<T>, E> {
+abstract class ListInput<T, E> extends FormInput<List<T>, E> {
   /// Stores the specific error found in an item (if any).
   final E? _firstItemError;
 
-  const ListInputBase.untouched({
+  const ListInput.untouched({
     super.value = const [],
     super.mode,
     super.errorCache,
   }) : _firstItemError = null,
        super.untouched();
 
-  const ListInputBase.touched({
+  const ListInput.touched({
     super.value = const [],
     super.initialValue,
     super.mode,
@@ -34,20 +34,21 @@ abstract class ListInputBase<T, E> extends FormInput<List<T>, E> {
        super.touched();
 
   @protected
-  ListInputBase.fromData(super.data, E? firstItemError)
+  ListInput.fromData(super.data, E? firstItemError)
     : _firstItemError = firstItemError,
       super.fromData();
 }
 
 /// A field for managing dynamic lists (e.g., Tags, Multi-selects).
-class ListInput<T, E> extends ListInputBase<T, E> with InputMixin<List<T>, E, ListInput<T, E>> {
-  const ListInput.untouched({
+class SimpleListInput<T, E> extends ListInput<T, E>
+    with InputMixin<List<T>, E, SimpleListInput<T, E>> {
+  const SimpleListInput.untouched({
     super.value = const [],
     super.mode,
     super.errorCache,
   }) : super.untouched();
 
-  const ListInput.touched({
+  const SimpleListInput.touched({
     super.value = const [],
     super.initialValue,
     super.mode,
@@ -56,7 +57,7 @@ class ListInput<T, E> extends ListInputBase<T, E> with InputMixin<List<T>, E, Li
     super.firstItemError,
   }) : super.touched();
 
-  ListInput._(super.data, super.firstItemError) : super.fromData();
+  SimpleListInput._(super.data, super.firstItemError) : super.fromData();
 
   /// Define validators for individual items here.
   List<Validator<T, E>> get itemValidators => const [];
@@ -92,7 +93,7 @@ class ListInput<T, E> extends ListInputBase<T, E> with InputMixin<List<T>, E, Li
   }
 
   @override
-  ListInput<T, E> update({
+  SimpleListInput<T, E> update({
     List<T>? value,
     InputStatus? status,
     ValidationMode? mode,
@@ -142,7 +143,7 @@ class ListInput<T, E> extends ListInputBase<T, E> with InputMixin<List<T>, E, Li
       errorCache: computedError,
     );
 
-    return ListInput._(newData, itemErr);
+    return SimpleListInput._(newData, itemErr);
   }
 
   @override
@@ -158,7 +159,7 @@ class ListInput<T, E> extends ListInputBase<T, E> with InputMixin<List<T>, E, Li
     return result;
   }
 
-  ListInput<T, E> addItem(T item) {
+  SimpleListInput<T, E> addItem(T item) {
     final sanitized = SanitizerPipeline.sanitize(item, itemSanitizers);
     // Use List.of to ensure a new mutable reference
     final newList = List<T>.of(value)..add(sanitized);
@@ -166,7 +167,7 @@ class ListInput<T, E> extends ListInputBase<T, E> with InputMixin<List<T>, E, Li
     return update(value: newList, status: InputStatus.touched);
   }
 
-  ListInput<T, E> setItem(int index, T newItem) {
+  SimpleListInput<T, E> setItem(int index, T newItem) {
     if (index < 0 || index >= value.length) return this;
     final sanitized = SanitizerPipeline.sanitize(newItem, itemSanitizers);
     final newList = List<T>.of(value);
@@ -175,7 +176,7 @@ class ListInput<T, E> extends ListInputBase<T, E> with InputMixin<List<T>, E, Li
     return update(value: newList, status: InputStatus.touched);
   }
 
-  ListInput<T, E> removeItemAt(int index) {
+  SimpleListInput<T, E> removeItemAt(int index) {
     if (index < 0 || index >= value.length) return this;
     final newList = List<T>.of(value)..removeAt(index);
 

@@ -4,7 +4,7 @@ import 'package:example/features/login/inputs/email_input.dart';
 import 'package:example/features/login/inputs/password_input.dart';
 import 'package:flux_form/flux_form.dart';
 
-class LoginShema extends FormShema {
+class LoginShema extends FormSchema {
   final EmailInput email;
   final PasswordInput password;
 

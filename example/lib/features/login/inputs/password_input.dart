@@ -3,7 +3,7 @@
 import 'package:example/features/login/models/auth_error.dart';
 import 'package:flux_form/flux_form.dart';
 
-class PasswordInput extends StringInputBase<AuthError>
+class PasswordInput extends StringInput<AuthError>
     with InputMixin<String, AuthError, PasswordInput> {
   // Use Live mode: Error shows while typing
   const PasswordInput.untouched({super.value}) : super.untouched(mode: ValidationMode.live);
@@ -14,8 +14,8 @@ class PasswordInput extends StringInputBase<AuthError>
 
   @override
   List<Validator<String, AuthError>> get validators => [
-    const RequiredValidator(AuthError.required),
-    const MinLengthValidator(6, AuthError.tooShort),
+    const StringValidator.notEmpty(AuthError.required),
+    const StringValidator.minLength(6, AuthError.tooShort),
   ];
 
   @override
