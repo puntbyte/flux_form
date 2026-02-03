@@ -1,3 +1,20 @@
+## 0.4.2
+
+🧬 **Generic Inputs & Extension Types**
+
+This release refactors core input types to support generic subtypes, enabling seamless integration with Dart **Extension Types** (e.g., `extension type Email(String)`).
+
+- **Generic Inputs**:
+    - `StringInput` and `DateTimeInput` now support generic subtypes of `String` and `DateTime`.
+    - This allows creating strongly-typed inputs like `class EmailInput extends StringInput<Email, AuthError>`.
+- **Adapter Pattern**:
+    - Added `adapt<S>()` method to `Validator` and `Sanitizer`.
+    - Allows reusing base validators for subtypes (e.g., using `StringValidator.required().adapt()` inside an `Email` input).
+- **Refactors**:
+    - `NumberSanitizer` changed from an `interface` to an `abstract class`.
+    - Added `@immutable` annotation to `Sanitizer` for better linting support.
+    - Updated `FormError.message` to accept a `covariant` context, allowing for stricter type checks in implementations.
+
 ## 0.4.1
 
 📦 **Maintenance**
