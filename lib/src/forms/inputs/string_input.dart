@@ -6,15 +6,15 @@ import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/forms/mixins/input_mixin.dart';
 import 'package:meta/meta.dart';
 
-abstract class StringInput<E> extends FormInput<String, E> {
+abstract class StringInput<T extends String, E> extends FormInput<T, E> {
   const StringInput.untouched({
-    super.value = '',
+    required super.value,
     super.mode,
     super.errorCache,
   }) : super.untouched();
 
   const StringInput.touched({
-    super.value = '',
+    required super.value,
     super.initialValue,
     super.mode,
     super.errorCache,
@@ -28,7 +28,7 @@ abstract class StringInput<E> extends FormInput<String, E> {
 /// A base class for String inputs.
 ///
 /// Subclass this and override [validators] and [sanitizers] to define logic.
-final class SimpleStringInput<E> extends StringInput<E>
+final class SimpleStringInput<E> extends StringInput<String, E>
     with InputMixin<String, E, SimpleStringInput<E>> {
   const SimpleStringInput.untouched({
     super.value = '',

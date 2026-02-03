@@ -13,6 +13,19 @@ abstract class Validator<T, E> {
 
   /// Returns [error] if [value] is invalid, otherwise returns null.
   E? validate(T value);
+
+  /// Adapts a validator expecting [T] to accept a subtype [S].
+  /// Useful for Extension Types (e.g., converting [Validator<String>] to [Validator<Email>]).
+  Validator<S, E> adapt<S extends T>() => _AdaptedValidator<S, T, E>(this);
+}
+
+class _AdaptedValidator<S extends T, T, E> extends Validator<S, E> {
+  final Validator<T, E> original;
+
+  _AdaptedValidator(this.original) : super(original.error);
+
+  @override
+  E? validate(S value) => original.validate(value);
 }
 
 /// A asynchronous validation rule.

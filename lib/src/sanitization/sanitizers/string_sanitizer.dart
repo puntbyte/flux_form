@@ -3,7 +3,7 @@
 import 'package:flux_form/src/sanitization/sanitizer.dart';
 
 /// A namespace for String transformation rules.
-abstract class StringSanitizer implements Sanitizer<String> {
+abstract class StringSanitizer extends Sanitizer<String> {
   const StringSanitizer();
 
   /// Trims whitespace from both ends.

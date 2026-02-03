@@ -6,7 +6,7 @@ import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/forms/mixins/input_mixin.dart';
 import 'package:meta/meta.dart';
 
-abstract class DateTimeInput<E> extends FormInput<DateTime?, E> {
+abstract class DateTimeInput<T extends DateTime, E> extends FormInput<T?, E> {
   const DateTimeInput.untouched({
     super.value,
     super.mode,
@@ -29,7 +29,7 @@ abstract class DateTimeInput<E> extends FormInput<DateTime?, E> {
 ///
 /// Handles nullable [DateTime?] because date fields often start empty.
 /// [E] is the error type (e.g. String, Enum).
-final class SimpleDateTimeInput<E> extends DateTimeInput<E>
+final class SimpleDateTimeInput<E> extends DateTimeInput<DateTime, E>
     with InputMixin<DateTime?, E, SimpleDateTimeInput<E>> {
   const SimpleDateTimeInput.untouched({
     super.value,

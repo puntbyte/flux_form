@@ -3,7 +3,7 @@
 import 'package:flux_form/src/sanitization/sanitizer.dart';
 
 /// A namespace for Number transformation rules.
-abstract class NumberSanitizer implements Sanitizer<num> {
+abstract class NumberSanitizer extends Sanitizer<num> {
   const NumberSanitizer();
 
   /// Converts negative numbers to positive.

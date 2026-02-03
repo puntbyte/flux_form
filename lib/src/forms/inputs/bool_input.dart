@@ -7,15 +7,15 @@ import 'package:flux_form/src/forms/mixins/input_mixin.dart';
 import 'package:flux_form/src/validation/validator.dart';
 import 'package:meta/meta.dart';
 
-abstract class BoolInput<E> extends FormInput<bool, E> {
+abstract class BoolInput<T extends bool, E> extends FormInput<T, E> {
   const BoolInput.untouched({
-    super.value = false,
+    required super.value,
     super.mode,
     super.errorCache,
   }) : super.untouched();
 
   const BoolInput.touched({
-    super.value = false,
+    required super.value,
     super.initialValue,
     super.mode,
     super.errorCache,
@@ -26,7 +26,8 @@ abstract class BoolInput<E> extends FormInput<bool, E> {
   BoolInput.fromData(super.data) : super.fromData();
 }
 
-final class SimpleBoolInput<E> extends BoolInput<E> with InputMixin<bool, E, SimpleBoolInput<E>> {
+final class SimpleBoolInput<E> extends BoolInput<bool, E>
+    with InputMixin<bool, E, SimpleBoolInput<E>> {
   final List<Validator<bool, E>> _validators;
 
   const SimpleBoolInput.untouched({

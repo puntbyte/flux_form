@@ -3,7 +3,7 @@
 import 'package:flux_form/src/sanitization/sanitizer.dart';
 
 /// A namespace for List transformation rules.
-abstract class ListSanitizer<T> implements Sanitizer<List<T>> {
+abstract class ListSanitizer<T> extends Sanitizer<List<T>> {
   const ListSanitizer();
 
   /// Removes duplicate items from the list.
