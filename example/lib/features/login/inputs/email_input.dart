@@ -3,11 +3,11 @@
 import 'package:example/features/login/models/auth_error.dart';
 import 'package:flux_form/flux_form.dart';
 
-class EmailInput extends StringInput<AuthError> with InputMixin<String, AuthError, EmailInput> {
+class EmailInput extends StringInput<String, AuthError> with InputMixin<String, AuthError, EmailInput> {
   // Use Deferred mode: Error only shows after submit (or if remote error exists)
-  const EmailInput.untouched({super.value}) : super.untouched(mode: ValidationMode.deferred);
+  const EmailInput.untouched({super.value= ''}) : super.untouched(mode: ValidationMode.deferred);
 
-  const EmailInput.touched({super.value, super.remoteError})
+  const EmailInput.touched({super.value = '', super.remoteError})
     : super.touched(mode: ValidationMode.deferred);
 
   // Private constructor for updates

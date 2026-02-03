@@ -3,12 +3,12 @@
 import 'package:example/features/login/models/auth_error.dart';
 import 'package:flux_form/flux_form.dart';
 
-class PasswordInput extends StringInput<AuthError>
+class PasswordInput extends StringInput<String, AuthError>
     with InputMixin<String, AuthError, PasswordInput> {
   // Use Live mode: Error shows while typing
-  const PasswordInput.untouched({super.value}) : super.untouched(mode: ValidationMode.live);
+  const PasswordInput.untouched({super.value = ''}) : super.untouched(mode: ValidationMode.live);
 
-  const PasswordInput.touched({super.value}) : super.touched(mode: ValidationMode.live);
+  const PasswordInput.touched({super.value = ''}) : super.touched(mode: ValidationMode.live);
 
   PasswordInput._(super.data) : super.fromData();
 
