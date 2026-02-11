@@ -1,10 +1,10 @@
 // lib/src/models/enums/validation_mode.dart
 
-import 'package:flux_form/src/forms/enums/form_status.dart';
+import 'package:flux_form/src/forms/enums/submission_status.dart';
 
 /// Controls when validation errors are displayed to users.
 enum ValidationMode {
-  /// Show errors only after the [FormStatus] changes to [FormStatus.failed].
+  /// Show errors only after the [SubmissionStatus] changes to [SubmissionStatus.failure].
   /// Useful for "Submit-only" validation forms (e.g., Login screens).
   deferred,
 
