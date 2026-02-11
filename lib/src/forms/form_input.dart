@@ -1,6 +1,6 @@
 // lib/src/forms/form_input.dart
 
-import 'package:flux_form/src/forms/enums/form_status.dart';
+import 'package:flux_form/src/forms/enums/submission_status.dart';
 import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/models/input_data.dart';
@@ -110,9 +110,9 @@ abstract class FormInput<T, E> {
   /// Call this inside your copyWith or factories.
   T sanitize(T value) => SanitizerPipeline.sanitize(value, sanitizers);
 
-  /// Resolves the error to display in the UI based on [FormStatus] and [ValidationMode].
-  E? displayError(FormStatus status) {
-    if (status.isFailed) return error;
+  /// Resolves the error to display in the UI based on [SubmissionStatus] and [ValidationMode].
+  E? displayError(SubmissionStatus status) {
+    if (status.isFailure) return error;
 
     switch (mode) {
       case ValidationMode.deferred:
