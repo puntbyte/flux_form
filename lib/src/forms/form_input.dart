@@ -1,7 +1,7 @@
 // lib/src/forms/form_input.dart
 
-import 'package:flux_form/src/forms/enums/submission_status.dart';
 import 'package:flux_form/src/forms/enums/input_status.dart';
+import 'package:flux_form/src/forms/enums/submission_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/models/input_data.dart';
 import 'package:flux_form/src/sanitization/sanitizer.dart';
