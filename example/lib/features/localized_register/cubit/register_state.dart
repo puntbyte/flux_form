@@ -3,13 +3,13 @@ part of 'register_cubit.dart';
 class RegisterState extends Equatable with FormMixin {
   final AuthField email;
   final AuthField password;
-  final FormStatus status;
+  final SubmissionStatus status;
   final String languageCode; // 'en' or 'es'
 
   const RegisterState({
     AuthField? email,
     AuthField? password,
-    this.status = FormStatus.initial,
+    this.status = SubmissionStatus.idle,
     this.languageCode = 'en',
   }) : email = email ?? const AuthField.untouched(),
        password = password ?? const AuthField.untouched();
@@ -20,7 +20,7 @@ class RegisterState extends Equatable with FormMixin {
   RegisterState copyWith({
     AuthField? email,
     AuthField? password,
-    FormStatus? status,
+    SubmissionStatus? status,
     String? languageCode,
   }) {
     return RegisterState(

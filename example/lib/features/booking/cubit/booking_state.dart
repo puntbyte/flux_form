@@ -1,24 +1,24 @@
 part of 'booking_cubit.dart';
 
 class BookingState extends Equatable with FormMixin {
-  final SimpleStringInput<String> start;
-  final SimpleStringInput<String> end;
-  final FormStatus status;
+  final StringInput<String> start;
+  final StringInput<String> end;
+  final SubmissionStatus status;
 
   const BookingState({
-    SimpleStringInput<String>? start,
-    SimpleStringInput<String>? end,
-    this.status = FormStatus.initial,
-  }) : start = start ?? const SimpleStringInput.untouched(),
-       end = end ?? const SimpleStringInput.untouched();
+    StringInput<String>? start,
+    StringInput<String>? end,
+    this.status = SubmissionStatus.idle,
+  }) : start = start ?? const StringInput.untouched(),
+       end = end ?? const StringInput.untouched();
 
   @override
   List<FormInput<dynamic, String>> get inputs => [start, end];
 
   BookingState copyWith({
-    SimpleStringInput<String>? start,
-    SimpleStringInput<String>? end,
-    FormStatus? status,
+    StringInput<String>? start,
+    StringInput<String>? end,
+    SubmissionStatus? status,
   }) => BookingState(
     start: start ?? this.start,
     end: end ?? this.end,

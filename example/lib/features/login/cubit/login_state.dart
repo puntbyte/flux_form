@@ -2,14 +2,14 @@ part of 'login_cubit.dart';
 
 class LoginState {
   final LoginShema shema;
-  final FormStatus status;
+  final SubmissionStatus status;
 
   const LoginState({
     this.shema = const LoginShema(),
-    this.status = FormStatus.initial,
+    this.status = SubmissionStatus.idle,
   });
 
-  LoginState copyWith({LoginShema? schema, FormStatus? status}) {
+  LoginState copyWith({LoginShema? schema, SubmissionStatus? status}) {
     return LoginState(
       shema: schema ?? shema,
       status: status ?? this.status,

@@ -61,7 +61,7 @@ class _BookingView extends StatelessWidget {
             child: const Text('Book Now'),
           ),
 
-          if (state.status.isSucceeded)
+          if (state.status.isSuccess)
             const Padding(
               padding: EdgeInsets.only(top: 20),
               child: Text(

@@ -2,13 +2,13 @@ part of 'search_cubit.dart';
 
 class SearchState extends Equatable with FormMixin {
   final SearchInput searchBar;
-  final FormStatus status;
+  final SubmissionStatus status;
   final List<Product> results;
   final bool isSearching;
 
   const SearchState({
     SearchInput? searchBar,
-    this.status = FormStatus.initial,
+    this.status = SubmissionStatus.idle,
     this.results = const [],
     this.isSearching = false,
   }) : searchBar = searchBar ?? const SearchInput.untouched();
@@ -18,7 +18,7 @@ class SearchState extends Equatable with FormMixin {
 
   SearchState copyWith({
     SearchInput? searchBar,
-    FormStatus? status,
+    SubmissionStatus? status,
     List<Product>? results,
     bool? isSearching,
   }) => SearchState(

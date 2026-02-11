@@ -19,7 +19,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     final newName = DynamicStringField.touched(
       value: sanitized,
       validators: const [StringValidator.notEmpty('Name is required')],
-    ) as SimpleStringInput<String>;
+    ) as StringInput<String>;
 
     emit(state.copyWith(name: newName));
   }
@@ -45,7 +45,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   /// Helper to construct the Company field with dynamic logic
-  SimpleStringInput<String> _buildCompanyField(String value, {required bool isEmployed}) {
+  StringInput<String> _buildCompanyField(String value, {required bool isEmployed}) {
     return DynamicStringField.touched(
       value: value,
       validators: [
@@ -55,14 +55,14 @@ class ProfileCubit extends Cubit<ProfileState> {
           validator: const StringValidator.notEmpty('Company is required if employed'),
         ),
       ],
-    ) as SimpleStringInput<String>;
+    ) as StringInput<String>;
   }
 
   void submit() {
     if (state.isValid) {
-      emit(state.copyWith(status: FormStatus.succeeded));
+      emit(state.copyWith(status: SubmissionStatus.success));
     } else {
-      emit(state.copyWith(status: FormStatus.failed));
+      emit(state.copyWith(status: SubmissionStatus.failure));
     }
   }
 }

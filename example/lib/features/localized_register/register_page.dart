@@ -76,7 +76,7 @@ class _RegisterView extends StatelessWidget {
             child: Text(lang == 'es' ? 'Registrarse' : 'Register'),
           ),
 
-          if (state.status.isSucceeded)
+          if (state.status.isSuccess)
             Padding(
               padding: const EdgeInsets.only(top: 20),
               child: Text(

@@ -69,7 +69,7 @@ class _ProfileView extends StatelessWidget {
           child: const Text('Save Profile'),
         ),
 
-        if (state.status.isSucceeded)
+        if (state.status.isSuccess)
           Container(
             margin: const EdgeInsets.only(top: 20),
             padding: const EdgeInsets.all(12),

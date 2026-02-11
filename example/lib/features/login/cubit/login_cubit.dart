@@ -13,7 +13,7 @@ class LoginCubit extends Cubit<LoginState> {
     emit(
       state.copyWith(
         schema: state.shema.copyWith(email: state.shema.email.replaceValue(value)),
-        status: FormStatus.initial, // Reset global status on edit
+        status: SubmissionStatus.idle, // Reset global status on edit
       ),
     );
   }
@@ -22,7 +22,7 @@ class LoginCubit extends Cubit<LoginState> {
     emit(
       state.copyWith(
         schema: state.shema.copyWith(password: state.shema.password.replaceValue(value)),
-        status: FormStatus.initial,
+        status: SubmissionStatus.idle,
       ),
     );
   }
@@ -32,11 +32,11 @@ class LoginCubit extends Cubit<LoginState> {
     // We check if it's NOT valid.
     if (state.shema.isNotValid) {
       // 2. Mark Failed: This reveals 'Deferred' errors (like Email).
-      emit(state.copyWith(status: FormStatus.failed));
+      emit(state.copyWith(status: SubmissionStatus.failure));
       return;
     }
 
-    emit(state.copyWith(status: FormStatus.submitting));
+    emit(state.copyWith(status: SubmissionStatus.inProgress));
 
     try {
       // Simulate Network Call
@@ -50,7 +50,7 @@ class LoginCubit extends Cubit<LoginState> {
         emit(
           state.copyWith(
             schema: state.shema.copyWith(email: newEmail),
-            status: FormStatus.failed,
+            status: SubmissionStatus.failure,
           ),
         );
         return;
@@ -58,9 +58,9 @@ class LoginCubit extends Cubit<LoginState> {
 
       // Success
       print('Submitted: ${state.shema.values}');
-      emit(state.copyWith(status: FormStatus.succeeded));
+      emit(state.copyWith(status: SubmissionStatus.success));
     } catch (_) {
-      emit(state.copyWith(status: FormStatus.failed));
+      emit(state.copyWith(status: SubmissionStatus.failure));
     }
   }
 }

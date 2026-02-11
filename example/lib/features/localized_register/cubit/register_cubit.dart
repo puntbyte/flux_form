@@ -41,9 +41,9 @@ class RegisterCubit extends Cubit<RegisterState> {
 
   void submit() {
     if (state.isValid) {
-      emit(state.copyWith(status: FormStatus.succeeded));
+      emit(state.copyWith(status: SubmissionStatus.success));
     } else {
-      emit(state.copyWith(status: FormStatus.failed));
+      emit(state.copyWith(status: SubmissionStatus.failure));
     }
   }
 }

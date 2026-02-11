@@ -20,7 +20,7 @@ class LoginPage extends StatelessWidget {
           child: BlocConsumer<LoginCubit, LoginState>(
             listenWhen: (p, c) => p.status != c.status,
             listener: (context, state) {
-              if (state.status.isSucceeded) {
+              if (state.status.isSuccess) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Login Success!')),
                 );
@@ -88,11 +88,11 @@ class _LoginForm extends StatelessWidget {
 
         // --- SUBMIT BUTTON ---
         ElevatedButton(
-          onPressed: state.status.isSubmitting ? null : cubit.submit,
+          onPressed: state.status.isInProgress ? null : cubit.submit,
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
-          child: state.status.isSubmitting
+          child: state.status.isInProgress
               ? const SizedBox(
                   height: 20,
                   width: 20,

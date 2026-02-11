@@ -3,9 +3,14 @@
 /// Flux Form
 library;
 
+// Entry point for fluent chaining.
+export 'src/chains/flux_chain.dart';
+export 'src/chains/sanitizer_chains.dart';
+export 'src/chains/validator_chains.dart';
+
 // Enums
-export 'src/forms/enums/form_status.dart';
 export 'src/forms/enums/input_status.dart';
+export 'src/forms/enums/submission_status.dart';
 export 'src/forms/enums/validation_mode.dart';
 
 // Form Core
@@ -50,6 +55,7 @@ export 'src/validation/validator_pipeline.dart';
 // Validators
 export 'src/validation/validators/bool_validator.dart';
 export 'src/validation/validators/comparable_validator.dart';
+export 'src/validation/validators/external_validator.dart';
 export 'src/validation/validators/file_validators.dart';
 export 'src/validation/validators/format_validator.dart';
 export 'src/validation/validators/list_validator.dart';
