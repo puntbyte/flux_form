@@ -8,9 +8,9 @@ import 'package:flux_form/src/sanitization/sanitizer.dart';
 import 'package:flux_form/src/sanitization/sanitizer_pipeline.dart';
 import 'package:flux_form/src/validation/validator.dart';
 import 'package:flux_form/src/validation/validator_pipeline.dart';
-import 'package:meta/meta.dart';
 
-abstract class MapInput<K, V, E> extends FormInput<Map<K, V>, E> {
+class MapInput<K, V, E> extends FormInput<Map<K, V>, E>
+    with InputMixin<Map<K, V>, E, MapInput<K, V, E>> {
   const MapInput.untouched({
     super.value = const {},
     super.mode,
@@ -25,27 +25,7 @@ abstract class MapInput<K, V, E> extends FormInput<Map<K, V>, E> {
     super.remoteError,
   }) : super.touched();
 
-  @protected
-  MapInput.fromData(super.data) : super.fromData();
-}
-
-class SimpleMapInput<K, V, E> extends MapInput<K, V, E>
-    with InputMixin<Map<K, V>, E, SimpleMapInput<K, V, E>> {
-  const SimpleMapInput.untouched({
-    super.value = const {},
-    super.mode,
-    super.errorCache,
-  }) : super.untouched();
-
-  const SimpleMapInput.touched({
-    super.value = const {},
-    super.initialValue,
-    super.mode,
-    super.errorCache,
-    super.remoteError,
-  }) : super.touched();
-
-  SimpleMapInput._(super.data) : super.fromData();
+  MapInput._(super.data) : super.fromData();
 
   /// Validates every VALUE in the map
   List<Validator<V, E>> get valueValidators => const [];
@@ -54,12 +34,12 @@ class SimpleMapInput<K, V, E> extends MapInput<K, V, E>
   List<Sanitizer<V>> get valueSanitizers => const [];
 
   @override
-  SimpleMapInput<K, V, E> update({
+  MapInput<K, V, E> update({
     Map<K, V>? value,
     InputStatus? status,
     ValidationMode? mode,
     E? remoteError,
-  }) => SimpleMapInput._(
+  }) => MapInput._(
     prepareUpdate(
       value: value,
       status: status,
@@ -105,7 +85,7 @@ class SimpleMapInput<K, V, E> extends MapInput<K, V, E>
     return result;
   }
 
-  SimpleMapInput<K, V, E> putItem(K key, V item) {
+  MapInput<K, V, E> putItem(K key, V item) {
     final sanitized = SanitizerPipeline.sanitize(item, valueSanitizers);
     final newMap = Map<K, V>.of(value); // Creates a new reference
     newMap[key] = sanitized;
@@ -113,7 +93,7 @@ class SimpleMapInput<K, V, E> extends MapInput<K, V, E>
     return update(value: newMap, status: InputStatus.touched);
   }
 
-  SimpleMapInput<K, V, E> removeItem(K key) {
+  MapInput<K, V, E> removeItem(K key) {
     if (!value.containsKey(key)) return this;
     final newMap = Map<K, V>.of(value)..remove(key);
 

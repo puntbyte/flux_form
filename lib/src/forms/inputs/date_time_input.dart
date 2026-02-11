@@ -4,9 +4,13 @@ import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/forms/mixins/input_mixin.dart';
-import 'package:meta/meta.dart';
 
-abstract class DateTimeInput<T extends DateTime, E> extends FormInput<T?, E> {
+/// A specialized input for [DateTime] values.
+///
+/// Handles nullable [DateTime?] because date fields often start empty.
+/// [E] is the error type (e.g. String, Enum).
+final class DateTimeInput<E> extends FormInput<DateTime?, E>
+    with InputMixin<DateTime?, E, DateTimeInput<E>> {
   const DateTimeInput.untouched({
     super.value,
     super.mode,
@@ -21,39 +25,15 @@ abstract class DateTimeInput<T extends DateTime, E> extends FormInput<T?, E> {
     super.remoteError,
   }) : super.touched();
 
-  @protected
-  DateTimeInput.fromData(super.data) : super.fromData();
-}
-
-/// A specialized input for [DateTime] values.
-///
-/// Handles nullable [DateTime?] because date fields often start empty.
-/// [E] is the error type (e.g. String, Enum).
-final class SimpleDateTimeInput<E> extends DateTimeInput<DateTime, E>
-    with InputMixin<DateTime?, E, SimpleDateTimeInput<E>> {
-  const SimpleDateTimeInput.untouched({
-    super.value,
-    super.mode,
-    super.errorCache,
-  }) : super.untouched();
-
-  const SimpleDateTimeInput.touched({
-    super.value,
-    super.initialValue,
-    super.mode,
-    super.errorCache,
-    super.remoteError,
-  }) : super.touched();
-
-  SimpleDateTimeInput._(super.data) : super.fromData();
+  DateTimeInput._(super.data) : super.fromData();
 
   @override
-  SimpleDateTimeInput<E> update({
+  DateTimeInput<E> update({
     DateTime? value,
     InputStatus? status,
     ValidationMode? mode,
     E? remoteError,
-  }) => SimpleDateTimeInput._(
+  }) => DateTimeInput._(
     prepareUpdate(
       value: value,
       status: status,
