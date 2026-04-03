@@ -3,6 +3,8 @@
 import 'package:flux_form/src/forms/enums/input_status.dart';
 import 'package:flux_form/src/forms/enums/submission_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
+import 'package:flux_form/src/forms/form_schema.dart';
+import 'package:flux_form/src/forms/mixins/input_mixin.dart';
 import 'package:flux_form/src/forms/models/input_data.dart';
 import 'package:flux_form/src/sanitization/sanitizer.dart';
 import 'package:flux_form/src/sanitization/sanitizer_pipeline.dart';
@@ -12,26 +14,13 @@ import 'package:meta/meta.dart';
 
 @immutable
 abstract class FormInput<T, E> {
-  /// The current value of the input.
   final T value;
-
-  /// The value this input had when it was first created [FormInput.untouched].
   final T initialValue;
-
-  /// The interaction state (touched/untouched).
   final InputStatus status;
-
-  /// Controls when errors are displayed (Live, Deferred, Blur).
   final ValidationMode mode;
-
-  /// An error injected from an external source (API, Server).
   final E? _remoteError;
-
-  /// Cached result of local validation to avoid recomputation.
   final E? _cachedError;
 
-  /// Creates a field in its initial state [isTouched] false).
-  /// Sets [initialValue] to [value].
   const FormInput.untouched({
     required this.value,
     this.mode = ValidationMode.live,
@@ -41,9 +30,6 @@ abstract class FormInput<T, E> {
        _remoteError = null,
        _cachedError = errorCache;
 
-  /// Creates a field that has been modified (isTouched: true).
-  ///
-  /// [initialValue] must be passed to persist history, otherwise it defaults to [value].
   const FormInput.touched({
     required this.value,
     T? initialValue,
@@ -63,74 +49,82 @@ abstract class FormInput<T, E> {
       _remoteError = data.remoteError,
       _cachedError = data.errorCache;
 
-  /// Sanitizers to transform the value before validation.
-  List<Sanitizer<T>> get sanitizers => const [];
+  // ── Validation pipeline ───────────────────────────────────
 
-  /// Validators to run against the value.
+  /// Synchronous validators run against [value].
   List<Validator<T, E>> get validators => const [];
 
-  /// Returns the local validation error (cached if available).
+  /// Asynchronous validators run via [InputMixin.runBuiltInAsyncValidation].
+  List<AsyncValidator<T, E>> get asyncValidators => const [];
+
+  // ── Sanitization pipeline ─────────────────────────────────
+
+  List<Sanitizer<T>> get sanitizers => const [];
+
+  // ── Error resolution ──────────────────────────────────────
+
   E? get localError {
     if (_cachedError case final cached?) return cached;
-    // Only compute if not cached
-    final error = validate(value);
-    // Note: You can't cache here since this is a getter and class is immutable
-    return error;
+    return validate(value);
   }
 
-  /// Returns the effective error. Remote errors take precedence over local ones.
+  /// Remote errors take precedence over local ones.
   E? get error => _remoteError ?? localError;
 
-  /// Returns true if the field has been touched.
+  // ── Status flags ──────────────────────────────────────────
+
   bool get isTouched => status == InputStatus.touched;
 
-  /// Returns true if the field has not been touched.
   bool get isUntouched => status == InputStatus.untouched;
 
-  /// Returns true if there are no local OR remote errors.
   bool get isValid => localError == null && _remoteError == null;
 
-  /// Returns true if there are any errors (local or remote).
   bool get isNotValid => !isValid;
 
-  /// Returns true if the value equals [initialValue].
+  /// True when the current value equals the [initialValue] (user has not
+  /// changed the field from its starting state).
   bool get isPristine => value == initialValue;
 
-  /// Returns true if async validation is currently running
+  /// True when the current value differs from [initialValue].
+  ///
+  /// Opposite of [isPristine]. Useful for building PATCH payloads — combine
+  /// with [FormSchema.changedValues] to send only modified fields.
+  bool get isDirty => !isPristine;
+
   bool get isValidating => status == InputStatus.validating;
 
-  /// Define your validation logic here.
-  /// This is called automatically by the constructor.
+  // ── Validation helpers ────────────────────────────────────
+
   E? validate(T value) => ValidatorPipeline.validate(value, validators);
 
-  /// Override to enable async validation (e.g., username availability)
-  Future<E?> validateAsync(T value) async => null;
+  Future<E?> validateAsync(T value) => ValidatorPipeline.validateAsync(value, asyncValidators);
 
-  /// Define sanitization logic here (optional).
-  /// Call this inside your copyWith or factories.
   T sanitize(T value) => SanitizerPipeline.sanitize(value, sanitizers);
 
-  /// Resolves the error to display in the UI based on [SubmissionStatus] and [ValidationMode].
+  // ── UI error display ──────────────────────────────────────
+
+  /// Resolves the error to show in the UI based on [SubmissionStatus] and [ValidationMode].
   E? displayError(SubmissionStatus status) {
     if (status.isFailure) return error;
 
     switch (mode) {
       case ValidationMode.deferred:
-        return null; // Hidden until submit fails
+        return null;
       case ValidationMode.live:
       case ValidationMode.blur:
         return isTouched ? error : null;
     }
   }
 
-  /// Returns a list of ALL validation errors for the current value.
-  ///
-  /// This bypasses [_cachedError] (which only stores the first error)
-  /// and re-runs the full pipeline.
-  /// Use this for UI elements like Password Strength meters.
+  /// ALL validation errors for the current value — bypasses the cache.
+  /// Use for password-strength meters or multi-requirement checklists.
   List<E> get detailedErrors => ValidatorPipeline.validateAll(value, validators);
 
-  /// Centralizes the logic for updating a field.
+  // ── Mutation (internal) ───────────────────────────────────
+
+  /// ⚠️ Known limitation: when [T] is nullable (e.g., `DateTime?`), passing
+  /// `value: null` is indistinguishable from omitting `value`. Use
+  /// [InputMixin.reset] to revert a nullable field to its initial value.
   @protected
   InputData<T, E> prepareUpdate({
     T? value,
@@ -138,33 +132,24 @@ abstract class FormInput<T, E> {
     ValidationMode? mode,
     E? remoteError,
   }) {
-    // 1. Resolve Value
     final rawValue = value ?? this.value;
     final valueChanged = value != null && value != this.value;
     final sanitizedValue = value != null ? sanitize(rawValue) : rawValue;
 
-    // 2. Compute Local Error
     final computedError = valueChanged || _cachedError == null
         ? validate(sanitizedValue)
         : _cachedError;
 
     final effectiveStatus = status ?? this.status;
 
-    // 2. Resolve Remote Error
     E? effectiveRemote;
     if (remoteError != null) {
-      // A) Explicit new external error
       effectiveRemote = remoteError;
     } else if (effectiveStatus == InputStatus.untouched) {
-      // B) Resetting to untouched clears external errors (Logic Fix)
       effectiveRemote = null;
     } else if (valueChanged) {
-      // C) Input changed:
-      // If the field was invalid due to server (e.g. "Email taken"),
-      // and user changes it, we assume the server error is resolved/stale.
       effectiveRemote = null;
     } else {
-      // D) No change, preserve existing server error
       effectiveRemote = _remoteError;
     }
 
