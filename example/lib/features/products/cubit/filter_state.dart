@@ -43,16 +43,14 @@ class FilterState extends Equatable with FormMixin {
     PriceRangeField? priceRange,
     BoolField? onlyInStock,
     List<Product>? filteredProducts,
-  }) {
-    return FilterState(
-      category: category ?? this.category,
-      priceRange: priceRange ?? this.priceRange,
-      onlyInStock: onlyInStock ?? this.onlyInStock,
-      allProducts: allProducts,
-      // Keep original list
-      filteredProducts: filteredProducts ?? this.filteredProducts,
-    );
-  }
+  }) => FilterState(
+    category: category ?? this.category,
+    priceRange: priceRange ?? this.priceRange,
+    onlyInStock: onlyInStock ?? this.onlyInStock,
+    allProducts: allProducts,
+    // Keep original list
+    filteredProducts: filteredProducts ?? this.filteredProducts,
+  );
 
   @override
   List<Object?> get props => [category, priceRange, onlyInStock, filteredProducts];

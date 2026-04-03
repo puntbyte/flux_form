@@ -12,7 +12,8 @@ import 'package:flux_form/src/forms/schema_validator.dart';
 /// 1. [namedInputs] — maps serialization keys to input instances.
 /// 2. `copyWith` — field-level mutation (manual, Freezed, or build_runner).
 /// 3. [touchAll] — marks every input touched via your `copyWith`.
-/// 4. [reset] — resets every input to its initial value via your `copyWith`.
+/// 4. [reset] — resets every input to its initial value **and increments
+///    [formKey]** via your `copyWith`.
 ///
 /// ## What you may override
 ///
@@ -30,28 +31,97 @@ import 'package:flux_form/src/forms/schema_validator.dart';
 ///   const LoginSchema({
 ///     this.email = const EmailInput.untouched(),
 ///     this.password = const PasswordInput.untouched(),
+///     super.formKey,
 ///   });
 ///
 ///   @override
 ///   Map<String, FormInput> get namedInputs =>
 ///       {'email': email, 'password': password};
 ///
-///   LoginSchema copyWith({EmailInput? email, PasswordInput? password}) =>
-///       LoginSchema(email: email ?? this.email, password: password ?? this.password);
+///   LoginSchema copyWith({
+///     EmailInput? email,
+///     PasswordInput? password,
+///     int? formKey,
+///   }) => LoginSchema(
+///     email: email ?? this.email,
+///     password: password ?? this.password,
+///     formKey: formKey ?? this.formKey,
+///   );
 ///
 ///   @override
 ///   LoginSchema touchAll() => copyWith(
-///     email: email.markTouched(), password: password.markTouched());
+///     email: email.markTouched(),
+///     password: password.markTouched(),
+///     // formKey unchanged — touchAll is not a reset
+///   );
 ///
 ///   @override
-///   LoginSchema reset() => copyWith(
-///     email: email.reset(), password: password.reset());
+///   LoginSchema reset() => LoginSchema(
+///     // nextFormKey increments the counter → triggers widget recreation.
+///     formKey: nextFormKey,
+///   );
 /// }
 /// ```
+///
+/// ## Using formKey to reset visible text without controllers
+///
+/// `TextField(onChanged: ...)` owns its text internally and ignores
+/// programmatic value changes after the first build. The only way to reset
+/// the visible text without a [TextEditingController] is to change the
+/// widget's [key], which causes Flutter to destroy and recreate it.
+///
+/// Pass `formKey` as a [ValueKey] prefix on every text field:
+///
+/// ```dart
+/// // StatelessWidget — no TextEditingController, no StatefulWidget needed.
+/// TextField(
+///   key: ValueKey('${state.schema.formKey}_email'),
+///   onChanged: cubit.emailChanged,
+///   decoration: InputDecoration(
+///     errorText: state.schema.email.displayError(state.status)?.message(context),
+///   ),
+/// )
+/// ```
+///
+/// When [reset] is called the cubit emits a schema with an incremented
+/// `formKey`. Flutter sees a new key, destroys the old `TextField`, and
+/// creates a fresh one — visible text cleared, no controllers required.
 abstract class FormSchema {
-  const FormSchema();
+  // ── formKey ───────────────────────────────────────────────────────────────
 
-  // ── Required overrides ────────────────────────────────────
+  /// A monotonically increasing integer, incremented each time [reset] is
+  /// called.
+  ///
+  /// Use as a [ValueKey] prefix on `TextField` / `TextFormField` widgets to
+  /// force Flutter to recreate them (clearing visible text) when the form
+  /// is programmatically reset — without needing a [TextEditingController]:
+  ///
+  /// ```dart
+  /// TextField(
+  ///   key: ValueKey('${state.schema.formKey}_email'),
+  ///   onChanged: cubit.emailChanged,
+  /// )
+  /// ```
+  ///
+  /// Increment it inside your [reset] implementation via [nextFormKey].
+  /// Leave it unchanged inside [touchAll] and `copyWith` — only a full
+  /// reset should trigger widget recreation.
+  final int formKey;
+
+  const FormSchema({this.formKey = 0});
+
+  /// Returns `formKey + 1`.
+  ///
+  /// Pass this to your schema constructor inside [reset] so that the counter
+  /// advances and widgets bound to it are recreated:
+  ///
+  /// ```dart
+  /// @override
+  /// LoginSchema reset() => LoginSchema(formKey: nextFormKey);
+  /// ```
+  int get nextFormKey => formKey + 1;
+
+  // ── Required overrides ────────────────────────────────────────────────────
 
   /// Maps serialization keys to their respective input instances.
   ///
@@ -61,9 +131,7 @@ abstract class FormSchema {
 
   /// Returns a new schema with every input marked [InputStatus.touched].
   ///
-  /// Implement by calling your `copyWith`, passing each input through
-  /// [InputMixin.markTouched]. If the schema has [nestedSchemas], cascade
-  /// into them explicitly:
+  /// Do **not** increment [formKey] here — `touchAll` is not a reset.
   ///
   /// ```dart
   /// @override
@@ -75,142 +143,72 @@ abstract class FormSchema {
   FormSchema touchAll();
 
   /// Returns a new schema with every input reset to its [FormInput.initialValue]
-  /// and [InputStatus.untouched].
+  /// and [InputStatus.untouched], **and with [formKey] incremented**.
+  ///
+  /// Increment [formKey] via [nextFormKey] so that `TextField` widgets keyed
+  /// on it are recreated and their visible text is cleared automatically:
   ///
   /// ```dart
   /// @override
-  /// LoginSchema reset() => copyWith(
-  ///   email: email.reset(),
-  ///   password: password.reset(),
-  /// );
+  /// LoginSchema reset() => LoginSchema(formKey: nextFormKey);
+  ///                        //             ^^^ key incremented here
   /// ```
   FormSchema reset();
 
-  // ── Optional overrides ────────────────────────────────────
+  // ── Optional overrides ────────────────────────────────────────────────────
 
   /// Sub-schemas embedded in this schema (address, billing, etc.).
   ///
   /// Nested schemas participate in [isValid], [isTouched], [isUntouched],
   /// [isModified], [values], and [changedValues] automatically.
   /// Include them in your [touchAll] and [reset] implementations explicitly.
-  ///
-  /// ```dart
-  /// class RegisterSchema extends FormSchema {
-  ///   final NameInput name;
-  ///   final AddressSchema address;
-  ///
-  ///   @override
-  ///   Map<String, FormSchema> get nestedSchemas => {'address': address};
-  ///
-  ///   @override
-  ///   RegisterSchema touchAll() => copyWith(
-  ///     name: name.markTouched(),
-  ///     address: address.touchAll() as AddressSchema,
-  ///   );
-  /// }
-  /// ```
   Map<String, FormSchema> get nestedSchemas => const {};
 
   /// Cross-field validation rules.
   ///
   /// These run in addition to per-input validators. Failures cause [isValid]
   /// to return false and are exposed via [schemaErrors].
-  ///
-  /// ```dart
-  /// @override
-  /// List<SchemaValidator<BookingError>> get schemaValidators => [
-  ///   SchemaValidator.of<BookingSchema, BookingError>((s) {
-  ///     if (s.checkIn.value == null || s.checkOut.value == null) return null;
-  ///     return s.checkOut.value!.isAfter(s.checkIn.value!)
-  ///         ? null : BookingError.checkOutBeforeCheckIn;
-  ///   }),
-  /// ];
-  /// ```
   List<SchemaValidator<dynamic>> get schemaValidators => const [];
 
   /// Pre-fills all inputs from [data] and marks them touched.
   ///
-  /// Override to support **edit flows** — loading an existing entity and
-  /// pre-populating the form:
-  ///
-  /// ```dart
-  /// @override
-  /// LoginSchema populateFrom(Map<String, dynamic> data) => copyWith(
-  ///   email: email.replaceValue(data['email'] as String? ?? ''),
-  ///   password: password.replaceValue(data['password'] as String? ?? ''),
-  /// );
-  /// ```
-  ///
-  /// For **partial population** (only overwrite keys present in [data]):
-  /// ```dart
-  /// schema.populateFrom({
-  ///   for (final entry in data.entries)
-  ///     if (schema.namedInputs.containsKey(entry.key)) entry.key: entry.value,
-  /// });
-  /// ```
-  ///
   /// Not implemented by default — throws [UnimplementedError].
-  FormSchema populateFrom(Map<String, dynamic> data) =>
-      throw UnimplementedError(
-        '${runtimeType}.populateFrom() is not implemented. '
-            'Override it to support pre-filling from a data map.',
-      );
+  FormSchema populateFrom(Map<String, dynamic> data) => throw UnimplementedError(
+    '$runtimeType.populateFrom() is not implemented. '
+    'Override it to support pre-filling from a data map.',
+  );
 
-  // ── Derived list ──────────────────────────────────────────
+  // ── Derived list ──────────────────────────────────────────────────────────
 
-  /// Flat list of all inputs derived from [namedInputs].
   List<FormInput<dynamic, dynamic>> get inputs => namedInputs.values.toList();
 
-  // ── Aggregate validity ────────────────────────────────────
+  // ── Aggregate validity ────────────────────────────────────────────────────
 
-  /// True when every input is valid, every nested schema is valid, and all
-  /// [schemaValidators] pass.
   bool get isValid =>
       FormValidator.validate(inputs) &&
-          nestedSchemas.values.every((s) => s.isValid) &&
-          isSchemaValid;
+      nestedSchemas.values.every((s) => s.isValid) &&
+      isSchemaValid;
 
   bool get isNotValid => !isValid;
 
-  /// True when all [schemaValidators] pass (cross-field rules only).
   bool get isSchemaValid => schemaErrors.isEmpty;
 
-  /// True if any input has been interacted with, including nested schemas.
   bool get isTouched =>
-      FormValidator.isTouched(inputs) ||
-          nestedSchemas.values.any((s) => s.isTouched);
+      FormValidator.isTouched(inputs) || nestedSchemas.values.any((s) => s.isTouched);
 
-  /// True if no inputs have been touched, including those in nested schemas.
   bool get isUntouched =>
-      FormValidator.isUntouched(inputs) &&
-          nestedSchemas.values.every((s) => s.isUntouched);
+      FormValidator.isUntouched(inputs) && nestedSchemas.values.every((s) => s.isUntouched);
 
-  /// True if any input's current value differs from its initial value,
-  /// or if any nested schema is modified.
   bool get isModified =>
-      inputs.any((i) => i.isDirty) ||
-          nestedSchemas.values.any((s) => s.isModified);
+      inputs.any((i) => i.isDirty) || nestedSchemas.values.any((s) => s.isModified);
 
-  // ── Serialization ─────────────────────────────────────────
+  // ── Serialization ─────────────────────────────────────────────────────────
 
-  /// All current values keyed by [namedInputs]. Nested schemas appear as
-  /// nested maps under their [nestedSchemas] key.
-  ///
-  /// ```dart
-  /// await api.register(state.schema.values);
-  /// // {'name': 'Alice', 'address': {'city': 'London', 'zip': 'EC1A 1BB'}}
-  /// ```
   Map<String, dynamic> get values => {
     for (final e in namedInputs.entries) e.key: e.value.value,
     for (final e in nestedSchemas.entries) e.key: e.value.values,
   };
 
-  /// Only the values of inputs that differ from their [FormInput.initialValue].
-  ///
-  /// Use for PATCH API calls — send only what the user changed:
-  /// ```dart
-  /// await api.patchProfile(state.schema.changedValues);
-  /// ```
   Map<String, dynamic> get changedValues => {
     for (final e in namedInputs.entries)
       if (!e.value.isPristine) e.key: e.value.value,
@@ -218,63 +216,32 @@ abstract class FormSchema {
       if (e.value.isModified) e.key: e.value.changedValues,
   };
 
-  // ── Error access ──────────────────────────────────────────
+  // ── Error access ──────────────────────────────────────────────────────────
 
-  /// The error from the first invalid input, or null. Does not include
-  /// [schemaErrors]. Use [firstErrorOf] when all inputs share error type [E].
   dynamic get firstError => FormValidator.firstError(inputs);
 
-  /// Typed [firstError] for schemas where all inputs share error type [E].
-  ///
-  /// ```dart
-  /// final msg = state.schema.firstErrorOf<AuthError>()?.message(context);
-  /// ```
   E? firstErrorOf<E>() => FormValidator.firstError<E>(
     inputs.whereType<FormInput<dynamic, E>>().toList(),
   );
 
-  /// All non-null errors from all inputs in [namedInputs] order.
-  /// Does not include [schemaErrors].
-  List<dynamic> get errors =>
-      inputs.map((i) => i.error).whereType<Object>().toList();
+  List<dynamic> get errors => inputs.map((i) => i.error).whereType<Object>().toList();
 
-  /// Cross-field errors produced by [schemaValidators].
-  ///
-  /// Display where cross-field feedback belongs (e.g., below a date range):
-  /// ```dart
-  /// if (state.schema.schemaErrors.firstOrNull case BookingError e)
-  ///   Text(e.message(context));
-  /// ```
-  List<dynamic> get schemaErrors => schemaValidators
-      .map((v) => v.validate(this))
-      .whereType<Object>()
-      .toList();
+  List<dynamic> get schemaErrors =>
+      schemaValidators.map((v) => v.validate(this)).whereType<Object>().toList();
 
-  /// Every invalid input in [namedInputs] order.
-  ///
-  /// Useful for "scroll to first error" behaviour.
-  List<FormInput<dynamic, dynamic>> get invalidInputs =>
-      FormValidator.validateGranularly(inputs);
+  List<FormInput<dynamic, dynamic>> get invalidInputs => FormValidator.validateGranularly(inputs);
 
-  /// `{ fieldKey → error }` for every invalid input.
-  ///
-  /// Useful for server-error mapping and error-summary widgets:
-  /// ```dart
-  /// final errs = state.schema.namedErrors;
-  /// // {'email': AuthError.invalidEmail, 'password': AuthError.tooShort}
-  /// ```
   Map<String, dynamic> get namedErrors => {
     for (final e in namedInputs.entries)
       if (e.value.isNotValid) e.key: e.value.error,
   };
 
-  // ── Submit guard ──────────────────────────────────────────
+  // ── Submit guard ──────────────────────────────────────────────────────────
 
   /// Touches all inputs then checks validity — the canonical submit guard.
   ///
-  /// Returns `(touched, isValid)`:
-  /// - `touched` — schema with every input marked [InputStatus.touched].
-  /// - `isValid` — whether [isValid] returns true on the touched schema.
+  /// Returns `(touched, isValid)`. The touched schema should be emitted so
+  /// the UI reveals all pending errors.
   ///
   /// ```dart
   /// Future<void> submit() async {
@@ -283,12 +250,7 @@ abstract class FormSchema {
   ///     emit(state.copyWith(schema: touched, status: SubmissionStatus.failure));
   ///     return;
   ///   }
-  ///   await FormSubmitter<void>(
-  ///     onStart:   () => emit(state.copyWith(status: SubmissionStatus.inProgress)),
-  ///     onSubmit:  () => api.submit(state.schema.values),
-  ///     onSuccess: (_) => emit(state.copyWith(status: SubmissionStatus.success)),
-  ///     onError:   (e, s) => emit(state.copyWith(status: SubmissionStatus.failure)),
-  ///   ).submit();
+  ///   // ...
   /// }
   /// ```
   (FormSchema touched, bool isValid) validate() {

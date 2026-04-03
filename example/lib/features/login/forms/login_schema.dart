@@ -3,11 +3,6 @@
 import 'package:example/inputs/shared_inputs.dart';
 import 'package:flux_form/flux_form.dart';
 
-/// Demonstrates [FormSchema]:
-///   • [namedInputs] for automatic serialization via [values]
-///   • [touchAll] / [reset] delegating to typed [copyWith]
-///   • [validate] as the single submit guard
-///   • [populateFrom] for edit flows
 class LoginSchema extends FormSchema {
   final EmailInput email;
   final PasswordInput password;
@@ -15,6 +10,7 @@ class LoginSchema extends FormSchema {
   const LoginSchema({
     this.email = const EmailInput.untouched(),
     this.password = const PasswordInput.untouched(),
+    super.formKey,
   });
 
   @override
@@ -23,26 +19,35 @@ class LoginSchema extends FormSchema {
     'password': password,
   };
 
-  LoginSchema copyWith({EmailInput? email, PasswordInput? password}) =>
-      LoginSchema(email: email ?? this.email, password: password ?? this.password);
+  LoginSchema copyWith({
+    EmailInput? email,
+    PasswordInput? password,
+    int? formKey,
+  }) => LoginSchema(
+    email: email ?? this.email,
+    password: password ?? this.password,
+    formKey: formKey ?? this.formKey,
+  );
 
-  /// [touchAll] — marks every input touched so deferred errors become visible.
-  /// Called internally by [validate] before checking [isValid].
   @override
   LoginSchema touchAll() => copyWith(
     email: email.markTouched(),
     password: password.markTouched(),
+    // formKey deliberately unchanged — touchAll is not a reset.
   );
 
-  /// [reset] — reverts all inputs to initial values and clears touched state.
+  /// Resets all inputs to their initial values and increments [formKey].
+  ///
+  /// The incremented key causes any [TextField] or [TextFormField] widgets
+  /// that use `key: ValueKey('${state.schema.formKey}_fieldName')` to be
+  /// destroyed and recreated by Flutter — clearing their visible text without
+  /// needing a [TextEditingController].
   @override
-  LoginSchema reset() => copyWith(
-    email: email.reset(),
-    password: password.reset(),
+  LoginSchema reset() => LoginSchema(
+    // Inputs default to their untouched constructors automatically.
+    formKey: nextFormKey, // ← this is what triggers widget recreation
   );
 
-  /// [populateFrom] — pre-fills the schema from a server response or local cache.
-  /// Demonstrates the edit-flow pattern: call this when loading an existing user.
   @override
   LoginSchema populateFrom(Map<String, dynamic> data) => copyWith(
     email: email.replaceValue(data['email'] as String? ?? ''),
