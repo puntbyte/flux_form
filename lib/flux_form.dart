@@ -10,15 +10,18 @@ export 'src/forms/builders/list_input_builder.dart';
 export 'src/forms/builders/map_input_builder.dart';
 export 'src/forms/builders/number_input_builder.dart';
 export 'src/forms/builders/string_input_builder.dart';
+
 // ── Enums ─────────────────────────────────────────────────────────────────────
 export 'src/forms/enums/input_status.dart';
 export 'src/forms/enums/submission_status.dart';
 export 'src/forms/enums/validation_mode.dart';
+
 // ── Form core ─────────────────────────────────────────────────────────────────
 export 'src/forms/form_error.dart';
 export 'src/forms/form_input.dart';
-export 'src/forms/form_schema.dart';      // FormSchema + EditableSchema mixin
+export 'src/forms/form_schema.dart'; // FormSchema + EditableSchema mixin
 export 'src/forms/form_validator.dart';
+
 // ── Inputs ────────────────────────────────────────────────────────────────────
 // Each family: abstract base (for inheritance) + Simple* concrete (for composition).
 //
@@ -37,15 +40,18 @@ export 'src/forms/inputs/date_time_input.dart';
 export 'src/forms/inputs/list_input.dart';
 export 'src/forms/inputs/map_input.dart';
 export 'src/forms/inputs/number_input.dart';
-export 'src/forms/inputs/object_input.dart';    // ObjectInput + SimpleObjectInput
+export 'src/forms/inputs/object_input.dart'; // ObjectInput + SimpleObjectInput
 export 'src/forms/inputs/string_input.dart';
+
 // ── Mixins ────────────────────────────────────────────────────────────────────
 export 'src/forms/mixins/form_mixin.dart';
 export 'src/forms/mixins/input_mixin.dart';
+
 // ── Models ────────────────────────────────────────────────────────────────────
 export 'src/forms/models/input_data.dart';
 export 'src/forms/multi_step_schema.dart';
 export 'src/forms/schema_validator.dart';
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 // Note: debouncing, throttling, and rate-limiting are intentionally NOT
 // provided by this library. Use an external package that fits your project:
@@ -59,16 +65,20 @@ export 'src/forms/schema_validator.dart';
 // or [InputMixin.runBuiltInAsyncValidation] inside whichever debounce
 // mechanism you choose — the library does not care how the call is scheduled.
 export 'src/forms/utilities/form_submitter.dart';
+
 // ── Sanitization core ─────────────────────────────────────────────────────────
-export 'src/sanitization/sanitizer.dart';        // Sanitizer + Sanitizer.compose
+export 'src/sanitization/sanitizer.dart'; // Sanitizer + Sanitizer.compose
 export 'src/sanitization/sanitizer_pipeline.dart';
+
 // ── Sanitizers ────────────────────────────────────────────────────────────────
 export 'src/sanitization/sanitizers/list_sanitizer.dart';
 export 'src/sanitization/sanitizers/number_sanitizer.dart';
 export 'src/sanitization/sanitizers/string_sanitizer.dart';
+
 // ── Validation core ───────────────────────────────────────────────────────────
-export 'src/validation/validator.dart';          // Validator.compose + AsyncValidator.compose
+export 'src/validation/validator.dart'; // Validator.compose + AsyncValidator.compose
 export 'src/validation/validator_pipeline.dart'; // + validateAsyncParallel
+
 // ── Validators ────────────────────────────────────────────────────────────────
 export 'src/validation/validators/bool_validator.dart';
 export 'src/validation/validators/comparable_validator.dart';

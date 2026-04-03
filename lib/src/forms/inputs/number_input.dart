@@ -59,7 +59,6 @@ abstract class NumberInput<T extends num, E> extends FormInput<T, E> {
     final casted = switch (value) {
       int() => raw.toInt() as T,
       double() => raw.toDouble() as T,
-      _ => raw as T,
     };
     return update(value: casted, status: InputStatus.touched);
   }
