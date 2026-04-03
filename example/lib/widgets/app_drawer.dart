@@ -1,10 +1,11 @@
+// lib/widgets/app_drawer.dart
+
 import 'package:example/features/booking/booking_page.dart';
+import 'package:example/features/edit_profile/edit_profile_page.dart';
 import 'package:example/features/inventory/inventory_page.dart';
-import 'package:example/features/localized_register/register_page.dart';
 import 'package:example/features/login/login_page.dart';
-import 'package:example/features/products/product_page.dart';
-import 'package:example/features/profile/profile_page.dart';
 import 'package:example/features/search/search_page.dart';
+import 'package:example/features/wizard/wizard_page.dart';
 import 'package:flutter/material.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -14,76 +15,79 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: ListView(
+        padding: EdgeInsets.zero,
         children: [
           const DrawerHeader(
-            decoration: BoxDecoration(color: Colors.blue),
-            child: Text('FluxForm Examples', style: TextStyle(color: Colors.white, fontSize: 24)),
-          ),
-
-          ListTile(
-            title: const Text('Login Form'),
-            subtitle: const Text('GenericInput • String Errors'),
-            leading: const Icon(Icons.login),
-            onTap: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const LoginPage()),
+            decoration: BoxDecoration(color: Colors.indigo),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text('Flux Form', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                SizedBox(height: 4),
+                Text('Feature Showcase', style: TextStyle(color: Colors.white70, fontSize: 13)),
+              ],
             ),
           ),
-
-          ListTile(
-            title: const Text('Inventory List'),
-            subtitle: const Text('ListInput • Dynamic Items'),
-            leading: const Icon(Icons.list),
-            onTap: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const InventoryPage()),
-            ),
+          _tile(context,
+            icon: Icons.login,
+            title: 'Login',
+            subtitle: 'FormSchema · FormSubmitter · detailedErrors',
+            page: const LoginPage(),
           ),
-
-          ListTile(
-            title: const Text('Profile Form'),
-            subtitle: const Text('StringField • BoolField • Conditional Logic'),
-            leading: const Icon(Icons.person),
-            onTap: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const ProfilePage()),
-            ),
+          _tile(context,
+            icon: Icons.how_to_reg,
+            title: 'Registration Wizard',
+            subtitle: 'MultiStepSchema · builder API · Validator.compose',
+            page: const WizardPage(),
           ),
-
-          ListTile(
-            title: const Text('Booking Form'),
-            subtitle: const Text('Cross-Field Validation'),
-            leading: const Icon(Icons.calendar_today),
-            onTap: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const BookingPage()),
-            ),
+          _tile(context,
+            icon: Icons.person_outline,
+            title: 'Edit Profile',
+            subtitle: 'populateFrom · changedValues · nestedSchemas · blur',
+            page: const EditProfilePage(),
           ),
-
-          ListTile(
-            title: const Text('Register Form'),
-            subtitle: const Text('Enum Errors • Localized'),
-            leading: const Icon(Icons.lock),
-            onTap: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const RegisterPage()),
-            ),
+          _tile(context,
+            icon: Icons.calendar_month,
+            title: 'Booking',
+            subtitle: 'DateTimeInput · SchemaValidator · blur mode',
+            page: const BookingPage(),
           ),
-
-          ListTile(
-            title: const Text('Product List'),
-            subtitle: const Text('FilterInput • Dynamic Items'),
-            leading: const Icon(Icons.abc),
-            onTap: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const ProductPage()),
-            ),
+          _tile(context,
+            icon: Icons.search,
+            title: 'Search',
+            subtitle: 'Debouncer · runAsync · validateAsyncParallel',
+            page: const SearchPage(),
           ),
-
-          ListTile(
-            title: const Text('Search Form'),
-            subtitle: const Text('StringField • Debounce • Async'),
-            leading: const Icon(Icons.search),
-            onTap: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const SearchPage()),
-            ),
+          _tile(context,
+            icon: Icons.shopping_cart_outlined,
+            title: 'Inventory',
+            subtitle: 'ListInput · MapInput · Validator.compose · namedErrors',
+            page: const InventoryPage(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _tile(
+      BuildContext context, {
+        required IconData icon,
+        required String title,
+        required String subtitle,
+        required Widget page,
+      }) {
+    final isCurrent = ModalRoute.of(context)?.settings.name == title;
+    return ListTile(
+      leading: Icon(icon, color: isCurrent ? Colors.indigo : null),
+      title: Text(title, style: isCurrent ? const TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold) : null),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 11)),
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(settings: RouteSettings(name: title), builder: (_) => page),
+        );
+      },
     );
   }
 }

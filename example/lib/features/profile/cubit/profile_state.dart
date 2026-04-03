@@ -7,9 +7,9 @@ class ProfileState extends Equatable with FormMixin {
   final SubmissionStatus status;
 
   const ProfileState({
-    this.name = const StringInput.untouched(),
+    this.name = const SimpleStringInput.untouched(),
     this.isEmployed = const BoolField.untouched(),
-    this.company = const StringInput.untouched(),
+    this.company = const SimpleStringInput.untouched(),
     this.status = SubmissionStatus.idle,
   });
 
