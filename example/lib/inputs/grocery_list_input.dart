@@ -1,8 +1,8 @@
 import 'package:flux_form/flux_form.dart';
 
-class GroceryListInput extends SimpleListInput<String, String> {
+class GroceryListInput extends ListInput<String, String> {
   // 4. Constructors (Clean - just setting Mode)
-  // We use ValidationMode.change (Live) so user sees errors immediately when adding items
+  // We use ValidationMode.live so user sees errors immediately when adding items
   const GroceryListInput.untouched({super.value}) : super.untouched(mode: ValidationMode.live);
 
   const GroceryListInput.touched({super.value}) : super.touched(mode: ValidationMode.live);
@@ -26,7 +26,6 @@ class GroceryListInput extends SimpleListInput<String, String> {
     const StringSanitizer.trim(),
   ];
 
-
   @override
   GroceryListInput update({
     List<String>? value,
@@ -34,7 +33,10 @@ class GroceryListInput extends SimpleListInput<String, String> {
     ValidationMode? mode,
     String? remoteError,
   }) {
-    return isTouched
+    // Use the incoming status (e.g. InputStatus.touched from replaceValue) and
+    // fall back to the current status only when no explicit status is provided.
+    final effectiveStatus = status ?? this.status;
+    return effectiveStatus == InputStatus.untouched
         ? GroceryListInput.untouched(value: value ?? this.value)
         : GroceryListInput.touched(value: value ?? this.value);
   }

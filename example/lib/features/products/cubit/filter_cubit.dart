@@ -36,14 +36,17 @@ class FilterCubit extends Cubit<FilterState> {
       if (newState.category.value != null && newState.category.value != p.category) {
         return false;
       }
+
       // 2. Stock Check
       if (newState.onlyInStock.value && !p.inStock) {
         return false;
       }
+
       // 3. Price Check
       if (p.price < newState.priceRange.value.start || p.price > newState.priceRange.value.end) {
         return false;
       }
+
       return true;
     }).toList();
 

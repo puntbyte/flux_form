@@ -1,88 +1,166 @@
 // lib/src/validation/validators/string_validator.dart
 
+
+import 'package:flux_form/src/forms/form_input.dart';
 import 'package:flux_form/src/validation/validator.dart';
 
 /// A namespace for String-based validation rules.
 abstract class StringValidator<E> extends Validator<String, E> {
   const StringValidator(super.error);
 
-  /// Validates that the string is not empty (trims whitespace by default).
+  // ── Required / empty checks ───────────────────────────────
+  //
+  // There are three distinct "is this field empty?" rules. The difference
+  // is in how they handle whitespace-only values like "   ":
+  //
+  // ┌────────────────────┬──────────────┬──────────────┬──────────────┐
+  // │ Validator          │ ""           │ "   "        │ "a"          │
+  // ├────────────────────┼──────────────┼──────────────┼──────────────┤
+  // │ required           │ ✗ error      │ ✗ error      │ ✓ valid      │
+  // │ trimmedRequired    │ ✗ error      │ ✗ error      │ ✓ valid      │
+  // │ notEmpty           │ ✗ error      │ ✓ valid      │ ✓ valid      │
+  // └────────────────────┴──────────────┴──────────────┴──────────────┘
+  //
+  // `required` and `trimmedRequired` are functionally identical — both trim
+  // before checking. `required` is the conventional name; `trimmedRequired`
+  // is the explicit, self-documenting alias.
+  //
+  // Rule of thumb:
+  //   • Use `required`        → standard "this field must not be blank" rule.
+  //   • Use `trimmedRequired` → same as above, but makes the trim explicit
+  //                             (useful when your sanitizer does NOT include
+  //                             `StringSanitizer.trim()` and you still want to
+  //                             reject whitespace-only submissions).
+  //   • Use `notEmpty`        → when a single space is a legitimate value
+  //                             (rare — e.g., a middle-name separator field).
+
+  /// Fails when the value is empty after trimming whitespace.
+  ///
+  /// `""` → error.
+  /// `"   "` → error (whitespace-only is treated as blank).
+  /// `"a"` → valid.
+  ///
+  /// This is the standard "field is required" rule for most text inputs.
+  /// See also [trimmedRequired] (explicit alias) and [notEmpty] (no trimming).
   const factory StringValidator.required(E error) = _RequiredValidator;
 
-  /// Validates that the string is strictly not empty (no trimming).
+  /// Explicit alias for [required].
+  ///
+  /// Identical behaviour: fails when `value.trim().isEmpty`.
+  /// Use this name when you want to make the trim behaviour self-documenting,
+  /// particularly when your input does NOT include `StringSanitizer.trim()`
+  /// in its sanitizers list.
+  ///
+  /// ```dart
+  /// // Makes the "trimming before checking" contract obvious to readers:
+  /// StringValidator.trimmedRequired(AuthError.required)
+  /// ```
+  const factory StringValidator.trimmedRequired(E error) = _RequiredValidator;
+
+  /// Fails when the value is strictly empty (zero characters, no trimming).
+  ///
+  /// `""` → error.
+  /// `"   "` → **valid** (whitespace is treated as content).
+  /// `"a"` → valid.
+  ///
+  /// Use this only when a whitespace-only string is a deliberate, valid input
+  /// (e.g., a text-art field). For standard "required" behaviour, prefer
+  /// [required] or [trimmedRequired].
   const factory StringValidator.notEmpty(E error) = _NotEmptyValidator;
 
-  /// Validates minimum character length.
+  // ── Length checks ─────────────────────────────────────────
+
+  /// Fails when the string's length is less than [min].
   const factory StringValidator.minLength(int min, E error) = _MinLengthValidator;
 
-  /// Validates maximum character length.
+  /// Fails when the string's length is greater than [max].
   const factory StringValidator.maxLength(int max, E error) = _MaxLengthValidator;
 
-  /// Validates against a custom Regex.
-  const factory StringValidator.pattern(RegExp regex, E error) = _RegexValidator;
-
-  // --- Numeric String Checks ---
-
-  /// Validates that the string can be parsed into a number.
-  const factory StringValidator.isNumeric(E error) = _IsNumericStringValidator;
-
-  /// Validates that the string represents a number >= [min].
-  const factory StringValidator.numericMin(num min, E error) = _MinStringValueValidator;
-
-  /// Validates that the string represents a number <= [max].
-  const factory StringValidator.numericMax(num max, E error) = _MaxStringValueValidator;
-
-  // --- Content Checks ---
-  /// Validates that the string contains [substring].
-  const factory StringValidator.contains(String substring, E error) = _ContainsValidator;
-
-  /// Validates that the string starts with [prefix].
-  const factory StringValidator.startsWith(String prefix, E error) = _StartsWithValidator;
-
-  /// Validates that the string ends with [suffix].
-  const factory StringValidator.endsWith(String suffix, E error) = _EndsWithValidator;
-
-  /// Validates that the string does NOT contain [substring].
-  const factory StringValidator.notContains(String substring, E error) = _NotContainsValidator;
-
-  // --- New validators added below ---
-
-  /// Exact length (if non-empty).
+  /// Fails when the string is non-empty and not exactly [length] characters.
   const factory StringValidator.exactLength(int length, E error) = _ExactLengthValidator;
 
-  /// Length between min and max (inclusive).
+  /// Fails when the string is non-empty and its length is outside [[min], [max]].
   const factory StringValidator.lengthBetween(int min, int max, E error) = _LengthBetweenValidator;
 
-  /// Disallow any whitespace characters.
+  // ── Pattern checks ────────────────────────────────────────
+
+  /// Fails when the string is non-empty and does not match [regex].
+  const factory StringValidator.pattern(RegExp regex, E error) = _RegexValidator;
+
+  // ── Numeric string checks ─────────────────────────────────
+
+  /// Fails when the string is non-empty and cannot be parsed as a number.
+  const factory StringValidator.isNumeric(E error) = _IsNumericStringValidator;
+
+  /// Fails when the string represents a number less than [min].
+  /// Passes (valid) when the value is empty or not parseable as a number.
+  const factory StringValidator.numericMin(num min, E error) = _MinStringValueValidator;
+
+  /// Fails when the string represents a number greater than [max].
+  /// Passes (valid) when the value is empty or not parseable as a number.
+  const factory StringValidator.numericMax(num max, E error) = _MaxStringValueValidator;
+
+  // ── Content checks ────────────────────────────────────────
+
+  /// Fails when the string does not contain [substring].
+  const factory StringValidator.contains(String substring, E error) = _ContainsValidator;
+
+  /// Fails when the string does not start with [prefix].
+  const factory StringValidator.startsWith(String prefix, E error) = _StartsWithValidator;
+
+  /// Fails when the string does not end with [suffix].
+  const factory StringValidator.endsWith(String suffix, E error) = _EndsWithValidator;
+
+  /// Fails when the string contains [substring].
+  const factory StringValidator.notContains(String substring, E error) = _NotContainsValidator;
+
+  // ── Whitespace checks ─────────────────────────────────────
+
+  /// Fails when the string contains any whitespace character (including internal spaces).
   const factory StringValidator.noWhitespace(E error) = _NoWhitespaceValidator;
 
-  /// Disallow leading or trailing whitespace.
+  /// Fails when the string has leading or trailing whitespace.
   const factory StringValidator.noLeadingTrailingWhitespace(E error) =
       _NoLeadingTrailingWhitespaceValidator;
 
-  /// Allow only ASCII characters (code <= 127).
+  // ── Character set checks ──────────────────────────────────
+
+  /// Fails when the string contains any character with a code point above 127.
   const factory StringValidator.asciiOnly(E error) = _AsciiOnlyValidator;
 
-  /// Allow only printable ASCII characters (32..126).
+  /// Fails when the string contains any character outside the printable ASCII
+  /// range (code points 32–126).
   const factory StringValidator.printableAscii(E error) = _PrintableAsciiValidator;
 
-  /// Must contain at least one uppercase character A-Z.
+  // ── Character composition checks ──────────────────────────
+
+  /// Fails when the string contains no uppercase letter (A–Z).
   const factory StringValidator.hasUppercase(E error) = _HasUppercaseValidator;
 
-  /// Must contain at least one lowercase character a-z.
+  /// Fails when the string contains no lowercase letter (a–z).
   const factory StringValidator.hasLowercase(E error) = _HasLowercaseValidator;
 
-  /// Must contain at least one digit 0-9.
+  /// Fails when the string contains no digit (0–9).
   const factory StringValidator.hasDigit(E error) = _HasDigitValidator;
 
-  /// Must contain at least one special (non-alphanumeric) character.
+  /// Fails when the string contains no non-alphanumeric character.
   const factory StringValidator.hasSpecialChar(E error) = _HasSpecialCharValidator;
 
-  /// Minimum number of unique characters.
+  /// Fails when the number of unique characters is less than [minUnique].
   const factory StringValidator.minUniqueChars(int minUnique, E error) = _MinUniqueCharsValidator;
 
-  /// Composite password strength check:
-  /// positional: minUpper, minLower, minDigits, minSpecial, then error.
+  // ── Password composite check ──────────────────────────────
+
+  /// Composite password strength check.
+  ///
+  /// Fails when any of the minimums are not met:
+  /// - [minUpper] uppercase letters (A–Z)
+  /// - [minLower] lowercase letters (a–z)
+  /// - [minDigits] digits (0–9)
+  /// - [minSpecial] non-alphanumeric characters
+  ///
+  /// For granular per-requirement feedback (e.g., a strength meter), use
+  /// [FormInput.detailedErrors] with individual validators instead.
   const factory StringValidator.passwordStrength(
     int minUpper,
     int minLower,
@@ -92,7 +170,9 @@ abstract class StringValidator<E> extends Validator<String, E> {
   ) = _PasswordStrengthValidator;
 }
 
-// ================= Implementation =================
+// ════════════════════════════════════════════════════════════════
+// Implementations
+// ════════════════════════════════════════════════════════════════
 
 class _RequiredValidator<E> extends StringValidator<E> {
   const _RequiredValidator(super.error);
@@ -209,8 +289,6 @@ class _NotContainsValidator<E> extends StringValidator<E> {
   E? validate(String value) => !value.contains(substring) ? null : error;
 }
 
-// ---------------- New implementations ----------------
-
 class _ExactLengthValidator<E> extends StringValidator<E> {
   final int length;
 
@@ -323,7 +401,6 @@ class _HasDigitValidator<E> extends StringValidator<E> {
 }
 
 class _HasSpecialCharValidator<E> extends StringValidator<E> {
-  // non-alphanumeric (quick approximation)
   static final RegExp _special = RegExp('[^A-Za-z0-9]');
 
   const _HasSpecialCharValidator(super.error);
@@ -373,11 +450,11 @@ class _PasswordStrengthValidator<E> extends StringValidator<E> {
 
     for (final ch in value.runes) {
       if (ch >= 0x41 && ch <= 0x5A) {
-        upp++; // A-Z
+        upp++;
       } else if (ch >= 0x61 && ch <= 0x7A) {
-        low++; // a-z
+        low++;
       } else if (ch >= 0x30 && ch <= 0x39) {
-        dig++; // 0-9
+        dig++;
       } else {
         spec++;
       }

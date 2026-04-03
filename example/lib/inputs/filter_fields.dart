@@ -15,9 +15,12 @@ class CategoryField extends FormInput<String?, String>
     ValidationMode? mode,
     String? remoteError,
   }) {
-    return isTouched
-        ? CategoryField.touched(value: value ?? this.value)
-        : CategoryField.untouched(value: value ?? this.value);
+    // Respect the incoming status so that replaceValue() correctly transitions
+    // an untouched field to touched on first interaction.
+    final effectiveStatus = status ?? this.status;
+    return effectiveStatus == InputStatus.untouched
+        ? CategoryField.untouched(value: value ?? this.value)
+        : CategoryField.touched(value: value ?? this.value);
   }
 }
 
@@ -42,8 +45,11 @@ class PriceRangeField extends FormInput<RangeValues, String>
     ValidationMode? mode,
     String? remoteError,
   }) {
-    return isTouched
-        ? PriceRangeField.touched(value: value ?? this.value)
-        : PriceRangeField.untouched(value: value ?? this.value);
+    // Respect the incoming status so that replaceValue() correctly transitions
+    // an untouched field to touched on first interaction.
+    final effectiveStatus = status ?? this.status;
+    return effectiveStatus == InputStatus.untouched
+        ? PriceRangeField.untouched(value: value ?? this.value)
+        : PriceRangeField.touched(value: value ?? this.value);
   }
 }
