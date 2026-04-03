@@ -8,10 +8,12 @@ enum AuthError implements FormError {
   invalidEmail('invalid_email'),
   tooShort('too_short'),
   emailTaken('email_taken'), // Demonstrated Remote Error
-  unknown('unknown');
+  unknown('unknown')
+  ;
 
   @override
   final String code;
+
   const AuthError(this.code);
 
   @override

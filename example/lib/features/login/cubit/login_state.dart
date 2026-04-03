@@ -1,18 +1,18 @@
+// lib/features/login/cubit/login_state.dart
+
 part of 'login_cubit.dart';
 
 class LoginState {
-  final LoginShema shema;
+  final LoginSchema schema;
   final SubmissionStatus status;
 
   const LoginState({
-    this.shema = const LoginShema(),
+    this.schema = const LoginSchema(),
     this.status = SubmissionStatus.idle,
   });
 
-  LoginState copyWith({LoginShema? schema, SubmissionStatus? status}) {
-    return LoginState(
-      shema: schema ?? shema,
-      status: status ?? this.status,
-    );
-  }
+  LoginState copyWith({LoginSchema? schema, SubmissionStatus? status}) => LoginState(
+    schema: schema ?? this.schema,
+    status: status ?? this.status,
+  );
 }

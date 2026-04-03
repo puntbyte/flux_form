@@ -10,6 +10,8 @@ class AuthField extends FormInput<String, AuthError> {
 
   const AuthField.touched({super.value = '', this.rules = const []}) : super.touched();
 
+  @override
+  List<Validator<String, AuthError>> get validators => rules;
 
   @override
   AuthField update({
@@ -18,16 +20,12 @@ class AuthField extends FormInput<String, AuthError> {
     ValidationMode? mode,
     AuthError? remoteError,
   }) {
-    // If we are copying, we usually keep the same rules.
-    // If you need dynamic rules, you can add a `rules` parameter here.
-    return isTouched ?? false
-        ? AuthField.touched(
-      value: value ?? this.value,
-      rules: rules,
-    )
-        : AuthField.untouched(
-      value: value ?? this.value,
-      rules: rules,
-    );
+    // isTouched is a plain bool — the previous `isTouched ?? false` was a
+    // no-op null-check on a non-nullable value. Also respect the incoming
+    // status so replaceValue() correctly transitions the field to touched.
+    final effectiveStatus = status ?? this.status;
+    return effectiveStatus == InputStatus.untouched
+        ? AuthField.untouched(value: value ?? this.value, rules: rules)
+        : AuthField.touched(value: value ?? this.value, rules: rules);
   }
 }

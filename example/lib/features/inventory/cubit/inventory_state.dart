@@ -1,31 +1,23 @@
+// lib/features/inventory/cubit/inventory_state.dart
+
 part of 'inventory_cubit.dart';
 
-class InventoryState extends Equatable with FormMixin {
-  // We use the base type 'ListInput' here so that methods like
-  // .addItem() or .removeItem() (which return ListInput) assign correctly.
-  final SimpleListInput<String, String> groceries;
-
+class InventoryState {
+  final InventorySchema schema;
   final SubmissionStatus status;
 
-  InventoryState({
-    SimpleListInput<String, String>? groceries,
-    this.status = SubmissionStatus.idle,
-  }) : // Initialize with our specific subclass that contains all the rules
-       groceries = groceries ?? const GroceryListInput.untouched();
+  InventoryState({required this.schema, required this.status});
 
-  @override
-  List<FormInput> get inputs => [groceries];
+  factory InventoryState.initial() => InventoryState(
+    schema: InventorySchema(),
+    status: SubmissionStatus.idle,
+  );
 
   InventoryState copyWith({
-    SimpleListInput<String, String>? groceries,
+    InventorySchema? schema,
     SubmissionStatus? status,
-  }) {
-    return InventoryState(
-      groceries: groceries ?? this.groceries,
-      status: status ?? this.status,
-    );
-  }
-
-  @override
-  List<Object> get props => [groceries, status];
+  }) => InventoryState(
+    schema: schema ?? this.schema,
+    status: status ?? this.status,
+  );
 }

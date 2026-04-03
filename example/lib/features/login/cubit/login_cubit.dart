@@ -1,5 +1,7 @@
+// lib/features/login/cubit/login_cubit.dart
+
+import 'package:example/errors/auth_error.dart';
 import 'package:example/features/login/forms/login_schema.dart';
-import 'package:example/features/login/models/auth_error.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flux_form/flux_form.dart';
 
@@ -8,59 +10,65 @@ part 'login_state.dart';
 class LoginCubit extends Cubit<LoginState> {
   LoginCubit() : super(const LoginState());
 
-  void emailChanged(String value) {
-    // 1. Update Input -> 2. Update Form
-    emit(
-      state.copyWith(
-        schema: state.shema.copyWith(email: state.shema.email.replaceValue(value)),
-        status: SubmissionStatus.idle, // Reset global status on edit
+  void emailChanged(String value) => emit(
+    state.copyWith(
+      schema: state.schema.copyWith(
+        email: state.schema.email.replaceValue(value),
       ),
-    );
-  }
+      status: SubmissionStatus.idle,
+    ),
+  );
 
-  void passwordChanged(String value) {
-    emit(
-      state.copyWith(
-        schema: state.shema.copyWith(password: state.shema.password.replaceValue(value)),
-        status: SubmissionStatus.idle,
+  void passwordChanged(String value) => emit(
+    state.copyWith(
+      schema: state.schema.copyWith(
+        password: state.schema.password.replaceValue(value),
       ),
-    );
-  }
+      status: SubmissionStatus.idle,
+    ),
+  );
 
   Future<void> submit() async {
-    // 1. Validate: If invalid, state.form.isValid is false.
-    // We check if it's NOT valid.
-    if (state.shema.isNotValid) {
-      // 2. Mark Failed: This reveals 'Deferred' errors (like Email).
-      emit(state.copyWith(status: SubmissionStatus.failure));
+    // FormSchema.validate() — touches all inputs then checks validity.
+    // Returns a record (touched schema, bool isValid).
+    final (touched, isValid) = state.schema.validate();
+    if (!isValid) {
+      emit(state.copyWith(schema: touched as LoginSchema, status: SubmissionStatus.failure));
       return;
     }
 
-    emit(state.copyWith(status: SubmissionStatus.inProgress));
+    // FormSubmitter — encapsulates the async lifecycle with no try/catch in
+    // the Cubit. onStart, onSubmit, onSuccess, onError are all wired here.
+    await FormSubmitter<void>(
+      onStart: () => emit(state.copyWith(status: SubmissionStatus.inProgress)),
+      onSubmit: () => _fakeApi(state.schema.values),
+      onSuccess: (_) => emit(state.copyWith(status: SubmissionStatus.success)),
+      onError: (_, _) => emit(state.copyWith(status: SubmissionStatus.failure)),
+    ).submit();
+  }
 
-    try {
-      // Simulate Network Call
-      await Future.delayed(const Duration(seconds: 2));
+  void resetForm() => emit(
+    state.copyWith(
+      // schema.reset() reverts every input to initialValue + untouched.
+      schema: state.schema.reset(),
+      status: SubmissionStatus.idle,
+    ),
+  );
 
-      // 3. Simulate Server Error (e.g., Email taken)
-      if (state.shema.email.value == 'taken@gmail.com') {
-        // Inject remote error back into the field
-        final newEmail = state.shema.email.setRemoteError(AuthError.emailTaken);
-
-        emit(
-          state.copyWith(
-            schema: state.shema.copyWith(email: newEmail),
-            status: SubmissionStatus.failure,
+  Future<void> _fakeApi(Map<String, dynamic> values) async {
+    await Future.delayed(const Duration(seconds: 1));
+    if (values['email'] == 'taken@example.com') {
+      // setRemoteError — injects a server-side error into a specific field.
+      // The error is automatically cleared when the user next edits the field.
+      emit(
+        state.copyWith(
+          schema: state.schema.copyWith(
+            email: state.schema.email.setRemoteError(AuthError.emailTaken),
           ),
-        );
-        return;
-      }
-
-      // Success
-      print('Submitted: ${state.shema.values}');
-      emit(state.copyWith(status: SubmissionStatus.success));
-    } catch (_) {
-      emit(state.copyWith(status: SubmissionStatus.failure));
+          status: SubmissionStatus.failure,
+        ),
+      );
+      throw Exception('email taken');
     }
   }
 }
