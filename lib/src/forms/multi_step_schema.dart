@@ -215,7 +215,6 @@ class MultiStepSchema {
   /// initial values and marked untouched.
   MultiStepSchema reset() => MultiStepSchema(
     steps: steps.map((s) => s.reset()).toList(),
-    currentStepIndex: 0,
   );
 
   // ── Serialization ─────────────────────────────────────────

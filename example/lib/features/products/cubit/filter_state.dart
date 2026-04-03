@@ -36,7 +36,7 @@ class FilterState extends Equatable with FormMixin {
 
   // Helper to check if any filter is active
   bool get hasActiveFilters =>
-      category.value != null || onlyInStock.value == true || priceRange.value.end < 1000;
+      category.value != null || onlyInStock.value || priceRange.value.end < 1000;
 
   FilterState copyWith({
     CategoryField? category,

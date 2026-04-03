@@ -2,6 +2,10 @@
 
 import 'dart:async';
 
+import 'package:flux_form/flux_form.dart' show FormSchema;
+
+import 'package:flux_form/src/forms/form_schema.dart' show FormSchema;
+
 /// A utility class to encapsulate and standardise form submission lifecycles.
 ///
 /// [FormSubmitter] handles the try/catch, status transitions, and result

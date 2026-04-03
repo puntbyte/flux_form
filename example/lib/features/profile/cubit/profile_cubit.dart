@@ -28,7 +28,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   void employedChanged(bool value) {
     // Cast as BoolField to maintain type safety
-    final newEmployed = state.isEmployed.update(value: value, status: .touched) as BoolField;
+    final newEmployed = state.isEmployed.update(value: value, status: .touched);
 
     // 3. Conditional Logic: Re-evaluate company requirements
     final newCompany = _buildCompanyField(state.company.value, isEmployed: value);

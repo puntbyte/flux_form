@@ -160,7 +160,6 @@ class _NotBetweenValidator<T extends Comparable<T>, E> extends ComparableValidat
   }
 }
 
-// ignore: deprecated_member_use_from_same_package
 class _OneOfValidator<T extends Comparable<T>, E> extends ComparableValidator<T, E> {
   final List<T> candidates;
 
@@ -170,7 +169,6 @@ class _OneOfValidator<T extends Comparable<T>, E> extends ComparableValidator<T,
   E? validate(T value) => candidates.contains(value) ? null : error;
 }
 
-// ignore: deprecated_member_use_from_same_package
 class _NotOneOfValidator<T extends Comparable<T>, E> extends ComparableValidator<T, E> {
   final List<T> candidates;
 

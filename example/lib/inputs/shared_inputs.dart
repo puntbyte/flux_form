@@ -21,13 +21,13 @@ import 'package:flux_form/flux_form.dart';
 ///
 /// Compose lets you name a pipeline once and reuse it across multiple inputs:
 /// EmailInput, RecoveryEmailInput, InviteEmailInput — all share the same rules.
-final emailRules = Validator.compose<String, AuthError>([
+final Validator<String, AuthError> emailRules = Validator.compose<String, AuthError>([
   const StringValidator.required(AuthError.required),
   const FormatValidator.email(AuthError.invalidEmail),
 ]);
 
 /// Shared reusable email sanitizer built with [Sanitizer.compose].
-final emailSanitizers = Sanitizer.compose<String>([
+final Sanitizer<String> emailSanitizers = Sanitizer.compose<String>([
   const StringSanitizer.trim(),
   const StringSanitizer.toLowerCase(),
 ]);
@@ -136,7 +136,7 @@ class UsernameInput extends StringInput<AuthError>
   /// Async validators — checked via [runBuiltInAsyncValidation].
   @override
   List<AsyncValidator<String, AuthError>> get asyncValidators => [
-    _UsernameAvailabilityValidator(),
+    const _UsernameAvailabilityValidator(),
   ];
 
   @override
@@ -156,7 +156,7 @@ class UsernameInput extends StringInput<AuthError>
 /// Registered on [UsernameInput.asyncValidators] so the Cubit can call
 /// [InputMixin.runBuiltInAsyncValidation] without hardcoding the task.
 class _UsernameAvailabilityValidator extends AsyncValidator<String, AuthError> {
-  _UsernameAvailabilityValidator() : super(AuthError.usernameTaken);
+  const _UsernameAvailabilityValidator() : super(AuthError.usernameTaken);
 
   static const _takenUsernames = {'admin', 'root', 'flux', 'test'};
 

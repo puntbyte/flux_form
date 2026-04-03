@@ -28,7 +28,7 @@ abstract class ListSanitizer<T> extends Sanitizer<List<T>> {
   /// // Remove null entries from List<String?>.
   /// ListSanitizer.removeWhere((item) => item == null)
   /// ```
-  factory ListSanitizer.removeWhere(bool Function(T item) predicate) = _RemoveWhereSanitizer<T>;
+  const factory ListSanitizer.removeWhere(bool Function(T item) predicate) = _RemoveWhereSanitizer<T>;
 
   /// Sorts the list naturally.
   ///

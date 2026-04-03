@@ -66,7 +66,6 @@ class _FilterHeader extends StatelessWidget {
               const Align(alignment: Alignment.centerLeft, child: Text('Price Range')),
               RangeSlider(
                 values: state.priceRange.value,
-                min: 0,
                 max: 3000,
                 divisions: 30,
                 labels: RangeLabels(

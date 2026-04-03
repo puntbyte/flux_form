@@ -102,11 +102,10 @@ class StringInputBuilder<E> {
       _v(StringValidator.minUniqueChars(min, error));
 
   StringInputBuilder<E> passwordStrength({
-    int minUpper = 1,
+    required E error, int minUpper = 1,
     int minLower = 1,
     int minDigits = 1,
     int minSpecial = 1,
-    required E error,
   }) => _v(StringValidator.passwordStrength(minUpper, minLower, minDigits, minSpecial, error));
 
   // ── FormatValidator shortcuts ─────────────────────────────

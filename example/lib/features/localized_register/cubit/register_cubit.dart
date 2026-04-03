@@ -7,7 +7,7 @@ import 'package:flux_form/flux_form.dart';
 part 'register_state.dart';
 
 class RegisterCubit extends Cubit<RegisterState> {
-  RegisterCubit() : super(RegisterState());
+  RegisterCubit() : super(const RegisterState());
 
   void toggleLanguage() {
     final newLang = state.languageCode == 'en' ? 'es' : 'en';

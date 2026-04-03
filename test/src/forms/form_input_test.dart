@@ -1,7 +1,7 @@
 // test/src/forms/form_input_test.dart
 
-import 'package:flux_form/src/forms/enums/submission_status.dart';
 import 'package:flux_form/src/forms/enums/input_status.dart';
+import 'package:flux_form/src/forms/enums/submission_status.dart';
 import 'package:flux_form/src/forms/enums/validation_mode.dart';
 import 'package:flux_form/src/forms/form_input.dart';
 import 'package:test/test.dart';
@@ -192,8 +192,8 @@ void main() {
     });
 
     test('displayError shows error for live/blur only when touched', () {
-      const touched = TestInput.touched(value: 'bad', mode: ValidationMode.live);
-      const untouched = TestInput.untouched(value: 'bad', mode: ValidationMode.live);
+      const touched = TestInput.touched(value: 'bad');
+      const untouched = TestInput.untouched(value: 'bad');
       const normalStatus = SubmissionStatus.idle;
 
       expect(touched.displayError(normalStatus), 'invalid'); // touched -> shows error

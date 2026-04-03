@@ -37,7 +37,7 @@ class _SearchBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _FeatureTag(
+        const _FeatureTag(
           'Debouncer · runAsync · runBuiltInAsyncValidation · '
               'validateAsyncParallel · blur mode',
         ),

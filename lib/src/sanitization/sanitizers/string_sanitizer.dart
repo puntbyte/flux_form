@@ -59,7 +59,7 @@ abstract class StringSanitizer extends Sanitizer<String> {
   /// // Replace multiple spaces with a single one:
   /// StringSanitizer.replace(RegExp(r'\s+'), ' ')
   /// ```
-  factory StringSanitizer.replace(Pattern pattern, String replacement) = _ReplaceSanitizer;
+  const factory StringSanitizer.replace(Pattern pattern, String replacement) = _ReplaceSanitizer;
 
   /// Truncates the string to at most [maxLength] characters.
   ///

@@ -1,6 +1,7 @@
 // lib/features/login/forms/login_schema.dart
 
 import 'package:example/inputs/shared_inputs.dart';
+import 'package:flutter/material.dart' show TextEditingController, TextField, TextFormField;
 import 'package:flux_form/flux_form.dart';
 
 class LoginSchema extends FormSchema {

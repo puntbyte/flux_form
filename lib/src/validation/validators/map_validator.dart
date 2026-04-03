@@ -46,13 +46,13 @@ abstract class MapValidator<K, V, E> extends Validator<Map<K, V>, E> {
   /// Fails when any **value** in the map does not satisfy [predicate].
   ///
   /// Not `const` because it captures a function.
-  factory MapValidator.allValues(bool Function(V value) predicate, E error) =
+  const factory MapValidator.allValues(bool Function(V value) predicate, E error) =
       _AllValuesMapValidator;
 
   /// Fails when any **entry** in the map does not satisfy [predicate].
   ///
   /// Not `const` because it captures a function.
-  factory MapValidator.allEntries(
+  const factory MapValidator.allEntries(
     bool Function(K key, V value) predicate,
     E error,
   ) = _AllEntriesMapValidator;
@@ -113,7 +113,7 @@ class _RequiresKeysMapValidator<K, V, E> extends MapValidator<K, V, E> {
 class _AllValuesMapValidator<K, V, E> extends MapValidator<K, V, E> {
   final bool Function(V) predicate;
 
-  _AllValuesMapValidator(this.predicate, super.error);
+  const _AllValuesMapValidator(this.predicate, super.error);
 
   @override
   E? validate(Map<K, V> value) {
@@ -127,7 +127,7 @@ class _AllValuesMapValidator<K, V, E> extends MapValidator<K, V, E> {
 class _AllEntriesMapValidator<K, V, E> extends MapValidator<K, V, E> {
   final bool Function(K, V) predicate;
 
-  _AllEntriesMapValidator(this.predicate, super.error);
+  const _AllEntriesMapValidator(this.predicate, super.error);
 
   @override
   E? validate(Map<K, V> value) {

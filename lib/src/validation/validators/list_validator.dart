@@ -36,7 +36,7 @@ abstract class ListValidator<T, E> extends Validator<List<T>, E> {
   /// Validates each item using a provided [itemValidator].
   /// Returns the first item error encountered. This factory is non-const because
   /// it accepts a runtime validator instance.
-  factory ListValidator.every(Validator<T, E> itemValidator) = _EachItemValidator;
+  const factory ListValidator.every(Validator<T, E> itemValidator) = _EachItemValidator;
 
   /// Validates that the list has at least [minUnique] unique items.
   const factory ListValidator.minUnique(int minUnique, E error) = _MinUniqueValidator;
@@ -153,7 +153,7 @@ class _NoneMatchValidator<T, E> extends ListValidator<T, E> {
 class _EachItemValidator<T, E> extends ListValidator<T, E> {
   final Validator<T, E> itemValidator;
 
-  _EachItemValidator(this.itemValidator) : super(null);
+  const _EachItemValidator(this.itemValidator) : super(null);
 
   @override
   E? validate(List<T> value) {
