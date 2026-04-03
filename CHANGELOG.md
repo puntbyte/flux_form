@@ -1,155 +1,270 @@
-## 0.4.2
+## 0.5.0
 
-🧬 **Generic Inputs & Extension Types**
+🏗️ **The Schema & Composition Update**
 
-This release refactors core input types to support generic subtypes, enabling seamless integration with Dart **Extension Types** (e.g., `extension type Email(String)`).
+This is a major release. It completes the input type hierarchy, introduces
+cross-schema architecture primitives, adds a fluent builder API, and ships
+a comprehensive async validation pipeline. Every change is a clean break —
+no deprecation period.
 
-- **Generic Inputs**:
-    - `StringInput` and `DateTimeInput` now support generic subtypes of `String` and `DateTime`.
-    - This allows creating strongly-typed inputs like `class EmailInput extends StringInput<Email, AuthError>`.
-- **Adapter Pattern**:
-    - Added `adapt<S>()` method to `Validator` and `Sanitizer`.
-    - Allows reusing base validators for subtypes (e.g., using `StringValidator.required().adapt()` inside an `Email` input).
-- **Refactors**:
-    - `NumberSanitizer` changed from an `interface` to an `abstract class`.
-    - Added `@immutable` annotation to `Sanitizer` for better linting support.
-    - Updated `FormError.message` to accept a `covariant` context, allowing for stricter type checks in implementations.
-
-## 0.4.1
-
-📦 **Maintenance**
-
-- **Metadata**: Updated package description to better emphasize state management agnosticism.
-
-## 0.4.0
-
-🚀 **The Namespaced API & Inheritance Update**
-
-This release significantly improves Developer Experience (DX) by introducing a discoverable, namespaced API for validation and sanitization, and refining the input inheritance hierarchy for better reusability.
+---
 
 ### ⚠️ Breaking Changes
-- **Validator API**:
-    - Replaced standalone validator classes with **Namespaced Factory Methods** for better IDE discoverability.
-    - Example: `RequiredValidator(e)` → **`StringValidator.required(e)`**.
-    - Example: `EmailValidator(e)` → **`FormatValidator.email(e)`**.
-    - Example: `MinLengthValidator(e)` → **`StringValidator.minLength(e)`**.
-- **Logic Validators**:
-    - `WhenValidator` is now accessed via **`LogicValidator.when`**.
-    - **Critical Logic Change**: The `condition` argument is now a `bool Function()` (callback) instead of a raw `bool`. This enables **Lazy/Reactive** evaluation of cross-field logic at runtime.
-- **Input Inheritance**:
-    - Primitive inputs (`StringInput`, `NumberInput`, `BoolInput`, `ListInput`, `MapInput`, `DateTimeInput`) are now **`abstract`** base classes intended for inheritance (e.g., creating `EmailInput`).
-    - For standalone/one-off usage without inheritance, use the new **`Simple`** variants (e.g., `SimpleStringInput`, `SimpleBoolInput`).
+
+#### Input Hierarchy Renamed
+
+All concrete list and object inputs have been renamed for consistency with
+the rest of the input family.
+
+| 0.4.x                                   | 0.5.0                                                                 |
+|-----------------------------------------|-----------------------------------------------------------------------|
+| `ListInput` (abstract base)             | `BaseListInput`                                                       |
+| `SimpleListInput` (concrete)            | `ListInput`                                                           |
+| `StandardInput<T, E extends FormError>` | `ObjectInput<T, E>` (abstract) + `SimpleObjectInput<T, E>` (concrete) |
+| `GenericInput<T, E>`                    | Removed — use `SimpleObjectInput` or the builder API                  |
+
+#### All Primitive Input Bases Are Now Truly Abstract
+
+`StringInput`, `NumberInput`, `BoolInput`, `DateTimeInput`, and `MapInput`
+were previously marked `final`. They are now `abstract` so user-defined
+domain inputs can extend them via `InputMixin`. Each has a corresponding
+`Simple*` concrete class for composition without subclassing.
+
+#### `FormSchema` — `touchAll()` and `reset()` Are Now Abstract
+
+Both methods must be implemented in every concrete schema. This was
+previously optional; it is now enforced at compile time.
+
+#### `FormSchema.reset()` Must Increment `formKey`
+
+`FormSchema` now carries an immutable `int formKey` field. The `reset()`
+implementation must pass `nextFormKey` to the constructor. This enables
+stateless widget reset (see below).
+
+#### `FormSubmitter` Signature Simplified
+
+`FormSubmitter.submit([bool isValid])` — the `isValid` parameter is removed.
+Validity checking is the caller's responsibility. `onInvalid` is also
+removed.
+
+#### Chain API Removed
+
+`ValidatorBuilder`, `SanitizerBuilder`, `ValidatorChain`, and
+`SanitizerChain` are removed. Use the new per-type builder classes instead.
+
+#### `ComparableValidator.oneOf` / `notOneOf` Removed
+
+Use `ObjectValidator.oneOf` / `notOneOf` — these work for any `T`, not just
+`Comparable<T>`.
+
+---
 
 ### ✨ New Features
-- **Namespaced Validators**:
-    - **`BoolValidator`**: Boolean rules (isTrue, isFalse, equals).
-    - **`StringValidator`**: Basic rules (required, minLength, pattern).
-    - **`ObjectValidator`**: Custom validation logic (e.g., `custom`).
-    - **`FormatValidator`**: Complex formats (email, url, creditCard, uuid, hexColor).
-    - **`NumberValidator`**: Numeric constraints (min, max, positive).
-    - **`ListValidator`**: Collection rules (minLength, unique).
-    - **`LogicValidator`**: Reactive flow control (`when`, `unless`, `any`, `custom`).
-    - **`ComparableValidator`**: Date/Time and Duration checks.
-    - **`FileValidator`**: Size and extension checks.
-- **Namespaced Sanitizers**:
-    - **`StringSanitizer`**: `trim`, `toLowerCase`, `digitsOnly`, `capitalize`, `removeSpaces`.
-    - **`ListSanitizer`**: `unique`, `sort`, `remove`.
-    - **`NumberSanitizer`**: `round`, `ceil`, `clamp`.
-- **Simple Inputs**:
-    - Added `SimpleStringInput`, `SimpleNumberInput`, etc., which accept validators and sanitizers directly via constructor for quick composition.
-- **Utilities**:
-    - Added **`FormSubmitter<T>`** to standardize submission lifecycles (`onStart`, `onSubmit`, `onSuccess`, `onError`).
+
+#### `FormSchema` — Schema-Level Architecture
+
+- **`formKey`** (`int`) — a generation counter, incremented by `reset()` via
+  `nextFormKey`. Use as a `ValueKey` prefix on `TextField` widgets to force
+  Flutter to recreate them on reset, clearing visible text without a
+  `TextEditingController` or `StatefulWidget`.
+- **`nestedSchemas`** (`Map<String, FormSchema>`) — embed sub-schemas (e.g.,
+  `AddressSchema` inside `ProfileSchema`). Nested schemas participate in
+  `isValid`, `isTouched`, `isModified`, `values`, and `changedValues`
+  automatically.
+- **`schemaValidators`** (`List<SchemaValidator<E>>`) — cross-field
+  validation rules that receive the whole schema. Failures are surfaced via
+  `schemaErrors` and included in `isValid`.
+- **`populateFrom(Map<String, dynamic>)`** — pre-fill the form from a server
+  response map (edit flows). Override in concrete schemas.
+- **`touchAll()`** — marks every input touched. Now abstract.
+- **`reset()`** — resets every input to its `initialValue` and
+  `InputStatus.untouched`, and increments `formKey`. Now abstract.
+- **`validate()`** — calls `touchAll()` then checks `isValid`. Returns the
+  Dart record `(FormSchema touched, bool isValid)`.
+- **`changedValues`** — like `values` but only includes inputs where
+  `isDirty == true`. Nested schemas appear under their key only when
+  `isModified`. Use for PATCH API calls.
+- **`isModified`** — `true` when any input or nested schema has a value
+  different from its `initialValue`.
+- **`namedErrors`** — `Map<String, dynamic>` of `{fieldKey: error}` for
+  every invalid input. Useful for server-error mapping.
+- **`errors`** — flat `List<dynamic>` of all non-null errors.
+- **`invalidInputs`** — `List<FormInput>` of all failing inputs.
+- **`firstErrorOf<E>()`** — typed variant of `firstError` for schemas where
+  all inputs share error type `E`.
+- **`isSchemaValid`** — `true` when all `schemaValidators` pass (cross-field
+  rules only, does not re-run per-input validators).
+- **`schemaErrors`** — `List<dynamic>` of errors from `schemaValidators`.
+
+#### `SchemaValidator<E>` — Cross-Field Validation
+
+A new abstract class for rules that read two or more inputs simultaneously:
+
+```dart
+SchemaValidator.of<BookingSchema, BookingError>((s) {
+  if (s.checkIn.value == null || s.checkOut.value == null) return null;
+  return s.checkOut.value!.isAfter(s.checkIn.value!)
+      ? null : BookingError.checkOutBeforeCheckIn;
+})
+```
+
+#### `MultiStepSchema` — Wizard / Step-Based Forms
+
+A concrete, immutable class wrapping an ordered list of `FormSchema` steps
+with a `currentStepIndex` cursor. Key API:
+
+- `currentStep` — the active `FormSchema`
+- `advance()` / `back()` / `goToStep(int)` — navigation, all return new instances
+- `updateCurrentStep(FormSchema)` / `updateStep(int, FormSchema)` — mutation
+- `validateCurrentStep()` — returns `(MultiStepSchema, bool)`
+- `validateAll()` — touches + validates every step
+- `touchAll()` / `reset()` — cascade into all steps
+- `values` — merged `Map<String, dynamic>` from all steps
+- `changedValues` — merged changed values from all steps
+- `progress` — `double` in `[0.0, 1.0]` based on current position
+- `completedSteps` — count of valid steps
+- `isFirstStep` / `isLastStep` — boundary flags
+
+#### Builder API — Fluent Input Construction
+
+Six per-type builder classes replace the removed chain API. Each builder
+produces a fully configured `Simple*` input directly — no separate
+validator/sanitizer lists needed:
+
+- **`StringInputBuilder<E>`** — covers all `StringValidator`, `FormatValidator`,
+  `StringSanitizer`, and `LogicValidator` rules as named methods.
+- **`NumberInputBuilder<T extends num, E>`** — `NumberValidator` and
+  `NumberSanitizer` methods, with `.adapt<T>()` applied automatically.
+- **`BoolInputBuilder<E>`** — `BoolValidator` methods.
+- **`DateTimeInputBuilder<E>`** — nullable-aware date validators
+  (`.required()`, `.after()`, `.before()`, `.onOrAfter()`, `.onOrBefore()`,
+  `.between()`).
+- **`ListInputBuilder<T, E>`** — list-level and item-level validators and
+  sanitizers in one builder, with `itemValidate()` / `itemSanitize()` for
+  per-item rules.
+- **`MapInputBuilder<K, V, E>`** — map-level and value-level rules.
+
+All builders expose a `.validate(Validator)` / `.sanitize(Sanitizer)` escape
+hatch for rules not covered by named shortcuts, and a `.mode(ValidationMode)`
+call.
+
+#### `MapValidator` — New Validator Namespace
+
+Public namespace consistent with `StringValidator`, `NumberValidator`, etc.:
+
+`notEmpty`, `minLength`, `maxLength`, `containsKey`, `requiresKeys`,
+`allValues(predicate)`, `allEntries(predicate)`.
+
+#### `Validator.compose` / `AsyncValidator.compose` / `Sanitizer.compose`
+
+Static factory methods that bundle a list of validators or sanitizers into a
+single named, reusable instance:
+
+```dart
+final passwordRules = Validator.compose([
+  StringValidator.required(AuthError.required),
+  StringValidator.minLength(8, AuthError.tooShort),
+  StringValidator.hasUppercase(AuthError.noUppercase),
+]);
+```
+
+#### Async Validation Pipeline
+
+- **`FormInput.asyncValidators`** — declare async rules alongside sync rules
+  on the input class.
+- **`InputMixin.runAsync(task, onValidating)`** — the canonical async
+  lifecycle: calls `onValidating` synchronously (for spinner), awaits the
+  task, and returns the resolved input.
+- **`InputMixin.runBuiltInAsyncValidation(onValidating)`** — delegates to the
+  input's own `asyncValidators` getter.
+- **`ValidatorPipeline.validateAsyncParallel`** — fires all async validators
+  simultaneously via `Future.wait`, returns results in declaration order.
+
+#### `InputMixin.setValue(T)`
+
+Updates the value without marking the input as `InputStatus.touched`. This
+is the correct method for the blur-mode contract: call `setValue` in
+`onChanged`, `markTouched` in `onEditingComplete`.
+
+#### `FormInput.isDirty`
+
+Alias for `!isPristine`. `true` when the current value differs from
+`initialValue`. Drives `FormSchema.changedValues` and `isModified`.
+
+#### `ValidationMode.blur` — Documented UI Contract
+
+`blur` mode is now fully documented. At runtime it is identical to `live`
+(errors appear when touched). The difference is a UI contract:
+- In `onChanged` → call `setValue()` (no touch, error hidden).
+- In `onEditingComplete` / blur callback → call `markTouched()` (error revealed).
+  This enables "validate on focus-loss" without any library-side focus tracking.
+
+#### `EditableSchema` Mixin
+
+Opt-in mixin for schemas that support `populateFrom`. Mix into a schema to
+signal intent and enforce the override:
+
+```dart
+class ProfileSchema extends FormSchema with EditableSchema { ... }
+```
+
+#### New `StringSanitizer` Rules
+
+- `collapseWhitespace()` — trims and reduces internal whitespace runs to a
+  single space: `"John  Doe"` → `"John Doe"`.
+- `replace(Pattern, String)` — general-purpose pattern replacement.
+- `truncate(int maxLength)` — silently caps string length.
+
+#### New `ListSanitizer` Rules
+
+- `removeWhere(bool Function(T))` — removes items matching a predicate.
+- `unique()` — now preserves insertion order (first occurrence kept).
+
+#### `StringValidator.trimmedRequired`
+
+Explicit alias for `required`. Both trim before checking; `trimmedRequired`
+makes the behaviour self-documenting when the input has no `trim` sanitizer.
+
+#### Documented `StringValidator.required` vs `notEmpty`
+
+| Value   | `required` / `trimmedRequired` | `notEmpty` |
+|---------|--------------------------------|------------|
+| `""`    | ✗ error                        | ✗ error    |
+| `"   "` | ✗ error (trimmed)              | ✓ valid    |
+| `"a"`   | ✓ valid                        | ✓ valid    |
+
+---
 
 ### ⚡️ Improvements
-- **Regex**: Strengthened `EmailValidator` regex and added strict protocol mode to `UrlValidator`.
-- **Organization**: Codebase restructured to group related rules into specific files to reduce global namespace pollution.
 
-## 0.3.0
+- **`FormSubmitter`** — `onInvalid` removed; validity is always the caller's
+  concern. `FormSubmitter.delegated` also simplified.
+- **`ListSanitizer.unique()`** — fixed to preserve insertion order using a
+  `where(seen.add)` pattern instead of `toSet().toList()` which had
+  undefined iteration order.
+- **`FormMixin`** — brought to full parity with `FormSchema`: `touchAll()`,
+  `reset()`, `invalidInputs`, `errors` all added.
+- **`DateTimeInput`** — `isAfter` / `isBefore` simplified, `daysDifference`
+  helper added.
+- **`NumberInput`** — `increment` / `decrement` helpers preserve `T` correctly
+  for both `int` and `double` subtypes.
+- **`prepareUpdate`** — nullable limitation documented: passing `value: null`
+  on a nullable-typed input is indistinguishable from omitting the argument.
+  Use `reset()` to revert a nullable field to its initial value.
 
-✨ **The Schema Update**
+---
 
-This release addresses a common naming collision in the Flutter ecosystem. By renaming `FormGroup` 
-to `FormSchema`, we create a clear separation between your UI Widgets (e.g., `LoginForm`) and your 
-Data Logic (`LoginSchema`).
+### 🗑️ Removed
 
-### ⚠️ Breaking Changes
-- **Core Architecture**:
-    - **Renamed `FormGroup` to `FormSchema`**.
-    - All forms should now extend `FormSchema` and implement the `namedInputs` getter.
-- **ListInput API**:
-    - Renamed `getItemError(index)` to **`itemErrorAt(index)`** to align with Dart standards.
-    - Renamed `getValueError(key)` in `MapInput` to **`valueErrorAt(key)`**.
-- **Sanitization**:
-    - `ListInput` and `MapInput` now override `sanitize`. When replacing the entire collection value, the **items** inside are now passed through the sanitizer pipeline (e.g., trimming all strings in a list automatically).
-
-### 🚀 New Features
-- **Async Validation Workflow**:
-    - Added `markValidating()` and `resolveAsyncValidation(error)` to `InputMixin`.
-    - Makes handling server-side checks (like "Username Availability") declarative and clean.
-- **Detailed Errors**:
-    - Added `detailedErrors` getter to `FormInput`.
-    - Returns *all* failing validation rules, not just the first one. Perfect for **Password Strength Meters**.
-
-### ⚡️ Improvements & Fixes
-- **ListInput Performance**:
-    - Validation now runs in a **Single Pass**. It calculates structure validity (e.g., Min Length) and Item validity (e.g., Item #3 empty) simultaneously.
-    - `itemErrorAt(index)` is now an **O(1)** operation, using cached results from the update cycle.
-- **Immutability Hardening**:
-    - `ListInput` mutation helpers (`addItem`, `removeItem`) and `MapInput` helpers (`putItem`) now explicitly create new instances (`List.of`, `Map.of`). This guarantees that `==` equality checks correctly trigger UI rebuilds in Bloc/Riverpod.
-- **Serialization Fix**:
-    - Fixed an issue where `FormSchema.values` could throw a type error. It now strictly returns `Map<String, dynamic>`.
-- **Remote Error Logic**:
-    - Refined `prepareUpdate` logic. Resetting a field to `untouched` now correctly clears any lingering API/Remote errors.
-
-
-## 0.2.0
-
-🚀 **The Architecture Update**
-
-This release introduces major architectural improvements, bringing `FormGroup` for aggregation and renaming core classes to better align with standard form terminology.
-
-### ⚠️ Breaking Changes
-- **Renaming**:
-    - `Field` class is now **`FormInput`**.
-    - `StringField` → **`StringInput`**, `ListField` → **`ListInput`**, etc.
-    - `ValidationMode.onInteraction` → **`ValidationMode.live`**.
-    - `ValidationMode.onSubmit` → **`ValidationMode.deferred`**.
-    - `ValidationMode.onUnfocus` → **`ValidationMode.blur`**.
-- **Mixins**:
-    - `FieldCacheMixin` has been removed. Caching logic is now built natively into `FormInput`.
-    - Added `InputMixin` to provide fluent API methods (`replaceValue`, `markTouched`).
-
-### ✨ New Features
-- **FormGroup**:
-    - A new base class to aggregate multiple inputs.
-    - Automatically handles `isValid`, `isTouched`, and serialization via the `values` getter.
-- **New Inputs**:
-    - **`MapInput`**: Support for Key-Value collections validation.
-    - **`GenericInput`**: A concrete implementation for creating one-off inputs without subclassing.
-- **Sanitization**:
-    - `sanitize` method is now customizable in subclasses and runs automatically during `update`.
-- **Async Workflow**:
-    - Added `markValidating()` and `resolveAsyncValidation()` helpers to `InputMixin`.
-
-### 🐞 Fixes
-- **Remote Errors**: Logic updated to automatically clear "Server Errors" (e.g., *Email Taken*) as soon as the user modifies the input.
-- **Immutability**: `ListInput` and `MapInput` mutation helpers (`addItem`, `putItem`) now correctly create new instances to ensure state equality checks work.
-
-## 0.1.0
-
-🚀 **Initial Release**
-
-FluxForm is a modular, composition-based form state management library designed to replace boilerplate with type-safe fields and declarative validation pipelines.
-
-### Core Features
-- **Generic Fields**:
-    - `StringField`: Optimized for text inputs.
-    - `ListField`: First-class support for dynamic arrays with O(1) read performance.
-    - `StandardField`: Generic field support for Enums or Objects.
-- **Validation Pipeline**:
-    - Decoupled `Validator<T, E>` architecture.
-    - Built-in library of validators (Textual, Numeric, Logic, Comparison).
-- **Sanitization Pipeline**:
-    - Transform data before validation (e.g., `Trim`, `ToLowerCase`).
-- **Smart UI State**:
-    - `displayError(status)`: Automatically resolves whether to show errors based on the form's lifecycle.
+- `Debouncer` — use `dart:async Timer` or an external package (`rxdart`,
+  `easy_debounce`, `stream_transform`). `runAsync` is scheduling-agnostic.
+- `GenericInput<T, E>` — use `SimpleObjectInput<T, E>` or a builder.
+- `StandardInput<T, E>` — use `ObjectInput<T, E>` / `SimpleObjectInput<T, E>`.
+- `SimpleListInput<T, E>` — renamed to `ListInput<T, E>`.
+- Old `ListInput<T, E>` (abstract) — renamed to `BaseListInput<T, E>`.
+- `FormSubmitter.submit(bool isValid)` — validity parameter removed.
+- `FormSubmitter.onInvalid` — removed.
+- `ValidatorBuilder`, `SanitizerBuilder`, `ValidatorChain`, `SanitizerChain`
+  — replaced by the builder API.
+- `ComparableValidator.oneOf` / `notOneOf` — use `ObjectValidator.oneOf` /
+  `notOneOf`.

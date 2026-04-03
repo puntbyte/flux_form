@@ -1,1013 +1,1386 @@
 # Flux Form
 
-**Flux Form** is a modular, type-safe, and declarative form state management library for Dart and 
-Flutter. It eliminates the boilerplate of manual validation logic by using **Composition**, 
-**Immutable State**, and **Smart UI Logic**.
+**Flux Form** is a modular, type-safe, declarative form state management library for Dart and
+Flutter. It eliminates the boilerplate of manual validation logic through **Composition**,
+**Immutable State**, **Smart UI Logic**, and a rich built-in library of validators and sanitizers.
 
-Heavily inspired by the **`formz`** package, Flux Form builds upon the pattern of immutable inputs 
-but significantly expands the ecosystem with built-in validators, sanitization pipelines, and 
-intelligent form groups.
+Designed to be **state-management agnostic** — works with Bloc, Riverpod, Provider, Signals,
+MobX, or vanilla `setState`.
 
-Designed to be **state-management agnostic**, it works seamlessly with: **Bloc, Riverpod, Provider, 
-Signals, MobX, Vanilla `setState`**
-
-![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
----
-
-## 🚀 Key Features
-
-- **⚡️ "Batteries Included" Validators:** Comprehensive validation library including 
-  `FormatValidator` (Email, URL, UUID, Credit Cards), `ComparableValidator` (Dates, Numbers), 
-  `FileValidator`, `LogicValidator` (conditional logic), and standard text rules.
-
-- **🏗 FormSchema Architecture:** Group inputs into strongly-typed schemas that handle aggregate 
-  validity (`isValid`), serialization (`values`), and error aggregation automatically.
-
-- **🧼 Sanitization Pipeline:** Namespace-based sanitizers (`StringSanitizer.trim()`, 
-  `NumberSanitizer.clamp()`, `ListSanitizer.unique()`) transform data *before* validation.
-
-- **🎯 FormSubmitter Utility:** Encapsulates submission lifecycles with `onStart`, `onSuccess`, 
-  and `onError` hooks for clean async handling.
-
-- **🧠 Smart Validation Modes:** Built-in support for `live` (while typing), `deferred` 
-  (submit-only), and `blur` validation logic without complex UI code.
-
-- **📋 Complex Collections:** First-class support for `ListInput` (arrays with item-level 
-  validation) and `MapInput` (key-value collections) with O(1) error lookups.
-
-- **☁️ Server Error Handling:** Intelligent remote error injection that automatically clears when 
-  users modify fields to fix them.
-
-- **🔌 Validation Hooks:** `ValidatorPipeline.validateWithHooks()` enables logging, analytics, or 
-  debugging during the validation cycle.
-
-> #### 💡 Inspiration & Acknowledgment
-> This package owes a debt of gratitude to [**formz**](https://pub.dev/packages/formz).
-> Flux Form was created to solve specific points encountered while using `formz` in 
-> large-scale production apps—specifically the need for reduced boilerplate, dynamic collections, 
-> and a standard library of validators and sanitizers. If you like `formz`, you will feel right at 
-> home here.
+> Heavily inspired by [**formz**](https://pub.dev/packages/formz). Flux Form builds upon its
+> immutable-input pattern and expands it with built-in validators, sanitization pipelines,
+> schema-level cross-field rules, multi-step wizards, and async validation.
 
 ---
 
-## 📦 Installation
+## Table of Contents
 
-Add this to your `pubspec.yaml`:
+1. [Installation](#installation)
+2. [Core Concepts](#core-concepts)
+3. [Error Types](#error-types)
+4. [Inputs](#inputs)
+    - [Abstract Bases vs Simple Concretes](#abstract-bases-vs-simple-concretes)
+    - [Defining Custom Inputs](#defining-custom-inputs)
+    - [Builder API](#builder-api)
+    - [Input Lifecycle](#input-lifecycle)
+    - [Validation Modes](#validation-modes)
+    - [InputMixin Methods](#inputmixin-methods)
+5. [Validators](#validators)
+6. [Sanitizers](#sanitizers)
+7. [FormSchema](#formschema)
+    - [Defining a Schema](#defining-a-schema)
+    - [Schema API Reference](#schema-api-reference)
+    - [Nested Schemas](#nested-schemas)
+    - [Cross-Field Validation](#cross-field-validation)
+    - [Edit Flows — populateFrom](#edit-flows--populatefrom)
+    - [PATCH APIs — changedValues](#patch-apis--changedvalues)
+    - [Stateless Widget Reset — formKey](#stateless-widget-reset--formkey)
+8. [FormMixin](#formmixin)
+9. [MultiStepSchema](#multistepschema)
+10. [Async Validation](#async-validation)
+11. [State Management Integration](#state-management-integration)
+12. [UI Integration](#ui-integration)
+13. [FormSubmitter](#formsubmitter)
+14. [Composition Utilities](#composition-utilities)
+15. [Complete API Reference](#complete-api-reference)
+
+---
+
+## Installation
 
 ```yaml
 dependencies:
-  flux_form: ^0.4.1
+  flux_form: ^0.5.0
 ```
 
-> #### ⚠️ Note on Stability: 
-> This package is in its early lifecycle (0.x.x). It might/will contain breaking changes to the 
-> public API. Please pin your dependency version if you require absolute stability.
+```dart
+import 'package:flux_form/flux_form.dart';
+```
 
 ---
 
-## 🏃 Quick Start: The Setup
+## Core Concepts
 
-Flux Form is designed to be flexible. You can start simple or architect for scale from day one.
+Flux Form is built on four principles:
 
-### 1. Type-Safe Errors
-Flux Form is fully generic (`FormInput<Value, Error>`). This means you can use **any** data type to
-represent validation errors. Choose the approach that fits your app's complexity.
+**Immutable inputs** — Every `FormInput` is an immutable value object. Mutation returns a new
+instance. This guarantees correct `==` equality for Bloc/Riverpod state comparisons.
 
-#### 1.1 Option A: Simple Strings (Prototyping)
-The fastest way to get started. You pass the error message directly to the validator.
+**Pipeline architecture** — Sanitizers run before validators. Each pipeline is a `List` of
+composable, independently testable rules.
 
-- **Best for:** MVP apps, internal tools, or apps with only one language.
+**Typed errors** — `FormInput<T, E>` is generic over both value type `T` and error type `E`.
+You choose: raw `String`, a plain `enum`, or an `enum implements FormError` for full
+localisation support.
+
+**Schema aggregation** — `FormSchema` groups inputs into a cohesive unit that handles aggregate
+validity, serialization, cross-field rules, and UI reset — without coupling to any framework.
+
+---
+
+## Error Types
+
+### Option A — `String` errors (prototyping)
 
 ```dart
-// Define input with <String, String>
-class NameInput extends StringInput<String> ... {
+class EmailInput extends StringInput<String> ... {
   @override
   List<Validator<String, String>> get validators => [
-    StringValidator.required('Name is required'),
-    StringValidator.minLength(3, 'Name is too short'),
+    StringValidator.required('This field is required'),
+    FormatValidator.email('Invalid email address'),
   ];
 }
 ```
 
-#### 1.2 Option B: Custom Enum (Strict Typing)
-
-You can use a plain Dart `enum` to strictly define every possible error state. This decouples logic
-from text, allowing the UI to decide how to format messages.
-
-- **Best for:** Apps requiring strict type safety but handling localization purely in the UI layer.
+### Option B — Plain `enum` (strict typing, UI handles localisation)
 
 ```dart
-// 1. Define plain enum
-enum MyError { empty, tooShort, invalid }
+enum AuthError { required, invalidEmail, tooShort, usernameTaken }
 
-// 2. Define input with <String, MyError>
-class NameInput extends StringInput<MyError> ... {
+class EmailInput extends StringInput<AuthError> ... {
   @override
-  List<Validator<String, MyError>> get validators => [
-    StringValidator.required(MyError.empty),
-    StringValidator.minLength(3, MyError.tooShort),
+  List<Validator<String, AuthError>> get validators => [
+    StringValidator.required(AuthError.required),
+    FormatValidator.email(AuthError.invalidEmail),
   ];
 }
 
-// 3. Handle translation in UI
-Text(
-  switch (form.name.displayError(state.status)) {
-    MyError.empty => 'Please enter a name',
-    MyError.tooShort => 'Too short',
-    null => '',
-  }
-)
+// UI:
+errorText: switch (input.displayError(status)) {
+  AuthError.required     => 'This field is required',
+  AuthError.invalidEmail => 'Invalid email',
+  null                   => null,
+}
 ```
 
-#### 1.3 Option C: Implementing `FormError` (Recommended)
+### Option C — `enum implements FormError` (recommended for production)
 
-For the best experience, implementation the `FormError` interface on your enum. This provides a 
-standardized contract for accessing error codes (for analytics/API mapping) and localized messages.
-
-- **Best for:** Production apps, Multi-language support, and clean UI code.
+`FormError` requires two members: `String get code` (machine-readable, for API mapping /
+analytics) and `String message([dynamic context])` (human-readable, supports localisation).
 
 ```dart
-// 1. Implement FormError
 enum AuthError implements FormError {
   required('required'),
   invalidEmail('invalid_email'),
   tooShort('too_short'),
+  usernameTaken('username_taken'),
   unknown('unknown');
 
-  // The code used for API error matching or analytics
-  @override
-  final String code;
-
+  @override final String code;
   const AuthError(this.code);
 
-  // Helper to map API strings to this Enum
-  static AuthError fromCode(String? code) {
-    if (code == null) return unknown;
-    return values.firstWhere(
-      (e) => e.code == code, 
-      orElse: () => unknown,
-    );
-  }
+  static AuthError fromCode(String? code) => AuthError.values.firstWhere(
+    (e) => e.code == code,
+    orElse: () => AuthError.unknown,
+  );
 
-  // Easy localization integration
   @override
-  String message(BuildContext context) => switch (this) {
-    AuthError.required => AppLocalizations.of(context).reqField,
-    AuthError.invalidEmail => AppLocalizations.of(context).badEmail,
-    AuthError.tooShort => AppLocalizations.of(context).shortPass,
-    AuthError.unknown => 'Unknown Error',
+  String message([dynamic context]) => switch (this) {
+    AuthError.required      => 'This field is required',
+    AuthError.invalidEmail  => 'Please enter a valid email address',
+    AuthError.tooShort      => 'Must be at least 8 characters',
+    AuthError.usernameTaken => 'This username is already taken',
+    AuthError.unknown       => 'An unknown error occurred',
   };
 }
 
-// 2. Usage in UI is much cleaner
-Text(
-  // displayError returns AuthError?, so we can call .message() directly
-  form.email.displayError(state.status)?.message(context) ?? ''
-)
+// UI — no switch needed:
+errorText: input.displayError(status)?.message(context)
 ```
 
 ---
 
-### 2. Define Inputs
+## Inputs
 
-Inputs are the atomic units of your form. Every field in Flux Form extends `FormInput<T, E>`, where:
-- **`T` (Type):** The data type of the input's value (e.g., `String`, `bool`, `List<String>`).
-- **`E` (Error):** The data type used to represent validation failures (e.g., `String`, 
-  `AuthError`).
+### Abstract Bases vs Simple Concretes
 
-#### 2.1 Input State & Lifecycle (Enums)
+Every input type comes in two forms.
 
-An input's behavior is driven by two core enums that manage its lifecycle and UI visibility.
+| Abstract base (for inheritance) | Concrete (for composition) |
+|---|---|
+| `StringInput<E>` | `SimpleStringInput<E>` |
+| `NumberInput<T extends num, E>` | `SimpleNumberInput<T, E>` |
+| `BoolInput<E>` | `SimpleBoolInput<E>` |
+| `DateTimeInput<E>` | `SimpleDateTimeInput<E>` |
+| `BaseListInput<T, E>` | `ListInput<T, E>` |
+| `MapInput<K, V, E>` | `SimpleMapInput<K, V, E>` |
+| `ObjectInput<T, E extends FormError>` | `SimpleObjectInput<T, E>` |
 
-**`InputStatus` (The Interaction State)**
-- **`untouched` (Pristine):** The initial state. The user has not interacted with this field yet. 
-  Even if the value is invalid (e.g., empty required field), errors are usually hidden in the UI to 
-  avoid "shouting" at the user immediately.
-- **`touched` (Dirty):** The user has interacted with the field (focused, typed, or blurred). In 
-  this state, validation errors are revealed.
-- **`validating` (Async):** An asynchronous check (like a server API call) is in progress.
+**Extend the abstract base** when the same rules apply across multiple screens
+(EmailInput, PasswordInput, UsernameInput). Rules are locked in once.
 
-**`ValidationMode` (The Display Rules)**
-Controls *when* an error is revealed via the `displayError()` method.
-- **`live`:** Errors appear immediately as the user types, provided the field is `touched`.
-- **`deferred`:** Errors are hidden until the global `FormStatus` becomes `failed` (e.g., the user 
-  clicks "Submit").
-- **`blur`:** Logically identical to `live`, but indicates intent to trigger validation on focus 
-  loss.
+**Use the concrete class** for one-off fields that don't need a dedicated type. Rules are
+passed via constructor arguments or built with the [Builder API](#builder-api).
 
-#### 2.2 Core Properties and Methods
+### Defining Custom Inputs
 
-Inputs are immutable. You access state via properties and mutate state via methods (provided by the
-`InputMixin`).
-
-**Key Properties (Getters)**
-
-| Getter                      | Description                                                                                 |
-|:----------------------------|:--------------------------------------------------------------------------------------------|
-| `value`                     | The current value of type `T`.                                                              |
-| `isValid`                   | Returns `true` if there are no local or remote errors.                                      |
-| `isNotValid`                | Convenience getter for `!isValid`.                                                          |
-| `isTouched` / `isUntouched` | Checks the current `InputStatus`.                                                           |
-| `error`                     | Returns the active error (`E?`). Remote errors take precedence over local errors.           |
-| `detailedErrors`            | Returns a `List<E>` of *all* failing validation rules (great for Password Strength meters). |
-
-**Key Methods (Mutators from `InputMixin`)**
-
-| Method              | Description                                                                                   |
-|:--------------------|:----------------------------------------------------------------------------------------------|
-| `replaceValue(T)`   | Updates the value, runs validation, and marks the input as `touched`.                         |
-| `reset()`           | Reverts the input to its `initialValue` and marks it `untouched`.                             |
-| `markTouched()`     | Sets status to `touched` without changing the value.                                          |
-| `setRemoteError(E)` | Injects an external error (e.g., "Email taken" from an API). Auto-clears when the user types. |
-| `markValidating()`  | Sets status to `validating` before an async operation.                                        |
-
-#### 2.3 Option A: Use Built-in "Simple" Inputs (Composition)
-
-For inputs that don't require reusable logic (like a single-use Search bar or a Toggle), use the 
-concrete `Simple` classes. These accept validators directly in the constructor.
-
-**Available Types:** `SimpleStringInput`, `SimpleNumberInput`, `SimpleBoolInput`, 
-`SimpleDateTimeInput`, `SimpleListInput`, `SimpleMapInput`, and `GenericInput<T, E>`.
+Extend the abstract base and mix in `InputMixin<T, E, ConcreteType>`:
 
 ```dart
-// Example: One-off Search Field
-final search = SimpleStringInput.untouched(
-  value: '',
-  validators: [StringValidator.required('Search term required')],
-);
-
-// Example: One-off Terms Toggle
-final acceptTerms = SimpleBoolInput.untouched(
-  value: false,
-  validators: [BoolValidator.isTrue('You must accept terms')],
-);
-```
-
-#### 2.4 Option B: Create Custom Inputs (Inheritance - Recommended)
-For domain-specific logic (Email, Password, Username), extend the **Abstract Base Classes** 
-(`StringInput`, `NumberInput`, etc.). This keeps your rules encapsulated and reusable across 
-screens.
-
-```dart
-class EmailInput extends StringInput<AuthError> 
+class EmailInput extends StringInput<AuthError>
     with InputMixin<String, AuthError, EmailInput> {
-  
-  // 1. Initial State Constructors
-  const EmailInput.untouched({super.value = ''}) : super.untouched();
-  const EmailInput.touched({super.value = '', super.remoteError}) : super.touched();
 
-  // 2. Define Sanitizers and Validators internally
+  const EmailInput.untouched({super.value = ''})
+      : super.untouched(mode: ValidationMode.deferred);
+
+  const EmailInput.touched({super.value = '', super.remoteError})
+      : super.touched(mode: ValidationMode.deferred);
+
+  // Private constructor — receives fully computed InputData from prepareUpdate.
+  EmailInput._(super.data) : super.fromData();
+
   @override
-  List<Sanitizer<String>> get sanitizers => [StringSanitizer.toLowerCase()];
+  List<Sanitizer<String>> get sanitizers => [
+    const StringSanitizer.trim(),
+    const StringSanitizer.toLowerCase(),
+  ];
 
   @override
   List<Validator<String, AuthError>> get validators => [
     StringValidator.required(AuthError.required),
     FormatValidator.email(AuthError.invalidEmail),
   ];
-  
-  // ... update implementation (see section 2.8) ...
-}
-```
-
-#### 2.5 Sanitizers: Clean Data First
-Sanitizers transform input data **before** it reaches the validators or the state.
-
-**Built-in Sanitizers (Namespaced):**
-- `StringSanitizer`: `.trim()`, `.toLowerCase()`, `.digitsOnly()`, `.removeSpaces()`, 
-  `.capitalize()`.
-- `NumberSanitizer`: `.round()`, `.ceil()`, `.clamp(min, max)`.
-- `ListSanitizer`: `.unique()`, `.sort()`.
-
-**Custom Sanitizer Example:**
-```dart
-/// Removes currency symbols (e.g., "$1,200.00" -> "1200.00")
-class CurrencySanitizer implements Sanitizer<String> {
-  const CurrencySanitizer();
-
-  @override
-  String sanitize(String value) => value.replaceAll(RegExp(r'[$,]'), ''); 
-}
-```
-
-#### 2.6 Validators: Rule Definition
-Validators are pure functions that take a value and return `E?` (null means valid).
-
-**Built-in Validators (Namespaced):**
-- `StringValidator`: `.required()`, `.minLength()`, `.pattern()`.
-- `FormatValidator`: `.email()`, `.url()`, `.creditCard()`, `.hexColor()`.
-- `NumberValidator`: `.min()`, `.max()`, `.positive()`.
-- `LogicValidator`: Reactive flow control (`.when()`, `.any()`).
-
-**Reactive Logic Example (`LogicValidator`):**
-Validators can evaluate external conditions lazily at runtime.
-```dart
-validators: [
-  LogicValidator.when(
-    // Evaluates every time the user types
-    condition: () => schema.isCompany.value, 
-    validator: StringValidator.required(AuthError.taxIdRequired),
-  ),
-]
-```
-
-**Custom Validator Example:**
-```dart
-class ProfanityValidator<E> extends Validator<String, E> {
-  const ProfanityValidator(super.error);
-
-  @override
-  E? validate(String value) {
-    return value.contains('badword') ? error : null;
-  }
-}
-```
-
-#### 2.7 Why `InputMixin`?
-You will notice the `with InputMixin<T, E, I>` syntax. This is required for two reasons:
-1. **Fluent API:** It injects the mutator methods (`replaceValue`, `reset`).
-2. **Type Safety:** It forces these methods to return your specific class (`EmailInput`) rather 
-   than a generic `FormInput`, allowing you to chain methods safely.
-
-#### 2.8 The `update` Pattern
-
-Since Flux Form inputs are **immutable**, changing a value requires creating a new instance. The 
-`update` method handles this cloning process.
-
-**Option 1: The Private Constructor (Recommended)**
-
-This is the cleanest and safest approach. You define a private constructor `._()` that accepts the 
-calculated `InputData` object directly.
-
-```dart
-class EmailInput extends StringInput<String> with InputMixin<String, String, EmailInput> {
-  // ... public constructors ...
-
-  // Private constructor
-  EmailInput._(super.data) : super.fromData();
 
   @override
   EmailInput update({
-    String? value, 
-    InputStatus? status, 
-    ValidationMode? mode, 
-    String? remoteError
-  }) {
-    // prepareUpdate calculates the new state (running sanitizers/validators)
-    return EmailInput._(prepareUpdate(
-      value: value, 
-      status: status, 
-      mode: mode, 
-      remoteError: remoteError,
-    ));
-  }
+    String? value,
+    InputStatus? status,
+    ValidationMode? mode,
+    AuthError? remoteError,
+  }) => EmailInput._(
+    prepareUpdate(value: value, status: status, mode: mode, remoteError: remoteError),
+  );
 }
 ```
 
-**Option 2: Manual Factory (Verbose)**
+**Why `InputMixin<T, E, ConcreteType>`?** It injects fluent mutator methods
+(`replaceValue`, `setValue`, `reset`, `markTouched`, etc.) that return the concrete type
+rather than the abstract `FormInput<T, E>`. Without it the methods would return a less-useful
+base type.
 
-If you prefer not to use a private constructor, you must manually unpack the data and switch on the 
-status.
+**The `._()` private constructor pattern** is the recommended approach. `prepareUpdate`
+calculates the next `InputData` (running sanitizers, validators, and resolving remote errors)
+and the private constructor stores it directly. This is the most concise and safe `update`
+implementation.
+
+### Builder API
+
+For one-off inputs that don't need a dedicated class, the builder API produces a fully
+configured `Simple*` input in a single fluent expression:
 
 ```dart
-class EmailInput extends ... {
-  // ...public constructors only ...
-  
-  @override
-  EmailInput update({
-    String? value, 
-    InputStatus? status, 
-    ValidationMode? mode, 
-    String? remoteError
-  }) {
-    final data = prepareUpdate(
-      value: value, 
-      status: status, 
-      mode: mode, 
-      remoteError: remoteError
-    );
-    
-    return switch (data.status) {
-      InputStatus.untouched => EmailInput.untouched(value: data.value),
-      InputStatus.touched => EmailInput.touched(value: data.value, remoteError: data.remoteError),
-      InputStatus.validating => throw UnimplementedError('Needs private constructor'),
-    };
-  }
-}
+// StringInputBuilder<E>
+final email = StringInputBuilder<AuthError>()
+    .trim()
+    .toLowerCase()
+    .required(AuthError.required)
+    .email(AuthError.invalidEmail)
+    .mode(ValidationMode.deferred)
+    .buildUntouched();
+
+// NumberInputBuilder<T, E>
+final quantity = NumberInputBuilder<int, String>()
+    .min(1, 'At least 1 required')
+    .max(99, 'Maximum 99')
+    .buildUntouched(value: 1);
+
+// BoolInputBuilder<E>
+final acceptTerms = BoolInputBuilder<String>()
+    .isTrue('You must accept the Terms of Service')
+    .mode(ValidationMode.deferred)
+    .buildUntouched();
+
+// DateTimeInputBuilder<E>
+final checkIn = DateTimeInputBuilder<BookingError>()
+    .required(BookingError.required)
+    .after(DateTime.now(), BookingError.mustBeFuture)
+    .mode(ValidationMode.blur)
+    .buildUntouched();
+
+// ListInputBuilder<T, E>
+final tags = ListInputBuilder<String, String>()
+    .minLength(1, 'Add at least one tag')
+    .maxLength(10, 'Too many tags')
+    .unique('Tags must be unique')
+    .itemValidate(StringValidator.required('Tag cannot be empty'))
+    .itemSanitize(StringSanitizer.trim())
+    .buildUntouched();
+
+// MapInputBuilder<K, V, E>
+final metadata = MapInputBuilder<String, String, String>()
+    .notEmpty('At least one entry required')
+    .valueValidate(StringValidator.required('Value cannot be empty'))
+    .buildUntouched();
 ```
+
+All builders expose `.validate(Validator)` and `.sanitize(Sanitizer)` escape hatches for
+rules not covered by named shortcuts.
+
+### Input Lifecycle
+
+Every `FormInput<T, E>` carries these read-only fields:
+
+| Field            | Type             | Description                                 |
+|------------------|------------------|---------------------------------------------|
+| `value`          | `T`              | Current value                               |
+| `initialValue`   | `T`              | Value at construction time                  |
+| `status`         | `InputStatus`    | `untouched`, `touched`, or `validating`     |
+| `mode`           | `ValidationMode` | `live`, `deferred`, or `blur`               |
+| `error`          | `E?`             | Remote error (if set) ?? local error        |
+| `localError`     | `E?`             | Result of running `validators`              |
+| `isTouched`      | `bool`           | `status == InputStatus.touched`             |
+| `isUntouched`    | `bool`           | `status == InputStatus.untouched`           |
+| `isValid`        | `bool`           | `localError == null && remoteError == null` |
+| `isNotValid`     | `bool`           | `!isValid`                                  |
+| `isPristine`     | `bool`           | `value == initialValue`                     |
+| `isDirty`        | `bool`           | `!isPristine`                               |
+| `isValidating`   | `bool`           | `status == InputStatus.validating`          |
+| `detailedErrors` | `List<E>`        | All failing validators (not just first)     |
+
+### Validation Modes
+
+`ValidationMode` controls when `displayError(SubmissionStatus)` returns a non-null error.
+
+| Mode       | Error visible when                                    | Best for               |
+|------------|-------------------------------------------------------|------------------------|
+| `live`     | Field is touched (user has typed)                     | Password, search bar   |
+| `deferred` | `SubmissionStatus.failure` only                       | Email, login forms     |
+| `blur`     | Field is touched (UI must call `markTouched` on blur) | Username, date pickers |
+
+`blur` mode is identical to `live` at runtime. The difference is a **UI contract**:
+call `setValue()` in `onChanged` (no touch, error hidden while typing) and `markTouched()`
+in `onEditingComplete` or a focus-lost callback (error revealed after leaving the field).
+
+```dart
+// blur mode contract in a Cubit:
+void usernameChanged(String v) =>
+    emit(state.copyWith(username: state.schema.username.setValue(v)));
+
+void usernameBlurred() =>
+    emit(state.copyWith(username: state.schema.username.markTouched()));
+
+// Widget:
+TextField(
+  onChanged: cubit.usernameChanged,
+  onEditingComplete: cubit.usernameBlurred,
+)
+```
+
+### InputMixin Methods
+
+All methods return the **concrete** input type (e.g., `EmailInput`, not `FormInput`).
+
+| Method                                      | Description                                                                      |
+|---------------------------------------------|----------------------------------------------------------------------------------|
+| `replaceValue(T value)`                     | Updates value + marks touched. Standard `onChanged` handler.                     |
+| `setValue(T value)`                         | Updates value, preserves current `InputStatus`. Use in blur mode `onChanged`.    |
+| `reset()`                                   | Reverts to `initialValue`, marks untouched, clears remote error.                 |
+| `markTouched()`                             | Sets status to touched without changing value. Use in blur mode blur handler.    |
+| `markUntouched()`                           | Sets status to untouched.                                                        |
+| `markValidating()`                          | Sets status to `validating`. Use before async checks.                            |
+| `setRemoteError(E error)`                   | Injects a server-side error. Auto-cleared when value changes.                    |
+| `clearRemoteError()`                        | Clears the remote error.                                                         |
+| `setMode(ValidationMode)`                   | Changes validation mode dynamically.                                             |
+| `resolveAsyncValidation(E? error)`          | Resolves async check: sets remote error (if non-null) and marks touched.         |
+| `runAsync({task, onValidating})`            | Full async lifecycle: calls `onValidating` synchronously, awaits task, resolves. |
+| `runBuiltInAsyncValidation({onValidating})` | Runs `asyncValidators` via `runAsync`.                                           |
+
+`displayError(SubmissionStatus status)` → `E?` — the bridge between logic and UI. Returns
+the error to display based on the field's mode and the form's submission status.
+
 ---
 
-### 3. Define the Schema (Optional)
+## Validators
 
-The `FormSchema` serves as the central contract for your form. It aggregates multiple inputs into a 
-single, cohesive unit. While **optional**, it is highly recommended for any form with more than one
-field.
+All validators are `@immutable` classes implementing `Validator<T, E>`. They return `null`
+for valid input and `E` for invalid input. Most built-in rules skip empty/null values
+(returning `null`) — pair with `StringValidator.required` to also catch blanks.
 
-- **When to skip:** Single-input UIs (e.g., a standalone Search Bar or Toggle).
-- **When to use:** Login screens, Registration wizards, Profile editors, or any form requiring API 
-  submission.
+### `StringValidator<E>` — `Validator<String, E>`
 
-#### 3.1 Implementation
+| Factory                                                          | Fails when                                                     |
+|------------------------------------------------------------------|----------------------------------------------------------------|
+| `required(E)`                                                    | `value.trim().isEmpty`                                         |
+| `trimmedRequired(E)`                                             | Same as `required` — explicit alias documenting trim behaviour |
+| `notEmpty(E)`                                                    | `value.isEmpty` (no trimming — whitespace is valid content)    |
+| `minLength(int, E)`                                              | `value.length < min`                                           |
+| `maxLength(int, E)`                                              | `value.length > max`                                           |
+| `exactLength(int, E)`                                            | Non-empty and `value.length != length`                         |
+| `lengthBetween(int min, int max, E)`                             | Non-empty and length outside `[min, max]`                      |
+| `pattern(RegExp, E)`                                             | Non-empty and regex does not match                             |
+| `isNumeric(E)`                                                   | Non-empty and cannot be parsed as `num`                        |
+| `numericMin(num, E)`                                             | Parsed number `< min`                                          |
+| `numericMax(num, E)`                                             | Parsed number `> max`                                          |
+| `contains(String, E)`                                            | Does not contain substring                                     |
+| `notContains(String, E)`                                         | Contains substring                                             |
+| `startsWith(String, E)`                                          | Does not start with prefix                                     |
+| `endsWith(String, E)`                                            | Does not end with suffix                                       |
+| `noWhitespace(E)`                                                | Contains any whitespace character                              |
+| `noLeadingTrailingWhitespace(E)`                                 | Has leading or trailing whitespace                             |
+| `asciiOnly(E)`                                                   | Contains code point > 127                                      |
+| `printableAscii(E)`                                              | Contains code point outside 32–126                             |
+| `hasUppercase(E)`                                                | No A–Z character                                               |
+| `hasLowercase(E)`                                                | No a–z character                                               |
+| `hasDigit(E)`                                                    | No 0–9 character                                               |
+| `hasSpecialChar(E)`                                              | No non-alphanumeric character                                  |
+| `minUniqueChars(int, E)`                                         | Unique character count < min                                   |
+| `passwordStrength(minUpper, minLower, minDigits, minSpecial, E)` | Any minimum not met                                            |
 
-To create a schema, extend `FormSchema` and implement the `namedInputs` getter. This getter acts as 
-the bridge between your inputs and the automatic serialization logic.
+### `FormatValidator<E>` — `Validator<String, E>`
+
+| Factory                          | Validates                                                    |
+|----------------------------------|--------------------------------------------------------------|
+| `email(E)`                       | RFC-style email format                                       |
+| `url(E, {bool requireProtocol})` | HTTP/HTTPS URL; `requireProtocol: false` allows bare domains |
+| `uuid(E)`                        | UUID (any version, 8-4-4-4-12 hex groups)                    |
+| `creditCard(E)`                  | Luhn algorithm                                               |
+| `hexColor(E)`                    | `#FFF` or `#FFFFFF`                                          |
+| `alpha(E)`                       | Only A–Z / a–z                                               |
+| `alphaNumeric(E)`                | Only A–Z / a–z / 0–9                                         |
+| `ipv4(E)`                        | IPv4 dotted-decimal                                          |
+| `ipv6(E)`                        | IPv6 full form (8 groups)                                    |
+| `ip(E)`                          | IPv4 or IPv6                                                 |
+| `domain(E)`                      | Domain name (labels + TLD ≥ 2 chars)                         |
+| `e164Phone(E)`                   | E.164 international phone (`+12345678900`)                   |
+| `slug(E)`                        | kebab-case (`[a-z0-9]+(-[a-z0-9]+)*`)                        |
+| `base64(E)`                      | Valid Base64 string                                          |
+| `json(E)`                        | Parseable JSON                                               |
+| `iso8601(E)`                     | Parseable `DateTime.parse` string                            |
+| `macAddress(E)`                  | `00:11:22:33:44:55` or `00-11-22-33-44-55`                   |
+| `fileExtension(List<String>, E)` | Extension is in allowed list                                 |
+
+### `NumberValidator<E>` — `Validator<num, E>`
+
+| Factory                                             | Fails when               |
+|-----------------------------------------------------|--------------------------|
+| `min(num, E)`                                       | `value < min`            |
+| `max(num, E)`                                       | `value > max`            |
+| `positive(E)`                                       | `value < 0`              |
+| `negative(E)`                                       | `value >= 0`             |
+| `nonZero(E)`                                        | `value == 0`             |
+| `between(num min, num max, E, {bool inclusive})`    | Outside `[min, max]`     |
+| `notBetween(num min, num max, E, {bool inclusive})` | Inside `[min, max]`      |
+| `integer(E)`                                        | `value % 1 != 0`         |
+| `multipleOf(num, E)`                                | Not a multiple of factor |
+| `even(E)`                                           | Not an even integer      |
+| `odd(E)`                                            | Not an odd integer       |
+
+### `BoolValidator<E>` — `Validator<bool, E>`
+
+| Factory                    | Fails when          |
+|----------------------------|---------------------|
+| `isTrue(E)`                | `!value`            |
+| `isFalse(E)`               | `value`             |
+| `equals(bool expected, E)` | `value != expected` |
+
+### `ComparableValidator<T extends Comparable<T>, E>` — `Validator<T, E>`
+
+| Factory                                         | Fails when       |
+|-------------------------------------------------|------------------|
+| `greaterThan(T, E)`                             | `value <= other` |
+| `lessThan(T, E)`                                | `value >= other` |
+| `min(T, E)`                                     | `value < min`    |
+| `max(T, E)`                                     | `value > max`    |
+| `between(T min, T max, E, {bool inclusive})`    | Outside range    |
+| `notBetween(T min, T max, E, {bool inclusive})` | Inside range     |
+
+Use for `DateTime`, `Duration`, or any `Comparable<T>`. For membership checks, use
+`ObjectValidator.oneOf` — it works for any type, not just `Comparable`.
+
+### `ListValidator<T, E>` — `Validator<List<T>, E>`
+
+| Factory                          | Fails when                 |
+|----------------------------------|----------------------------|
+| `notEmpty(E)`                    | `value.isEmpty`            |
+| `minLength(int, E)`              | `value.length < min`       |
+| `maxLength(int, E)`              | `value.length > max`       |
+| `unique(E)`                      | Duplicate items exist      |
+| `contains(T, E)`                 | Item not present           |
+| `containsAll(List<T>, E)`        | Any candidate not present  |
+| `containsNone(List<T>, E)`       | Any forbidden item present |
+| `allMatch(bool Function(T), E)`  | Any item fails predicate   |
+| `noneMatch(bool Function(T), E)` | Any item passes predicate  |
+| `every(Validator<T, E>)`         | Any item fails validator   |
+| `minUnique(int, E)`              | Unique count < min         |
+| `maxUnique(int, E)`              | Unique count > max         |
+
+### `MapValidator<K, V, E>` — `Validator<Map<K, V>, E>`
+
+| Factory                              | Fails when                |
+|--------------------------------------|---------------------------|
+| `notEmpty(E)`                        | `value.isEmpty`           |
+| `minLength(int, E)`                  | `value.length < min`      |
+| `maxLength(int, E)`                  | `value.length > max`      |
+| `containsKey(K, E)`                  | Key absent                |
+| `requiresKeys(List<K>, E)`           | Any required key absent   |
+| `allValues(bool Function(V), E)`     | Any value fails predicate |
+| `allEntries(bool Function(K, V), E)` | Any entry fails predicate |
+
+### `ObjectValidator<T, E>` — `Validator<T, E>`
+
+| Factory                          | Fails when              |
+|----------------------------------|-------------------------|
+| `match(T, E)`                    | `value != other`        |
+| `notMatch(T, E)`                 | `value == other`        |
+| `oneOf(List<T>, E)`              | Value not in list       |
+| `notOneOf(List<T>, E)`           | Value in list           |
+| `predicate(bool Function(T), E)` | Predicate returns false |
+
+### `LogicValidator<T, E>` — conditional / combinational validators
+
+| Factory                          | Behaviour                                                 |
+|----------------------------------|-----------------------------------------------------------|
+| `when({condition, validator})`   | Apply validator only when `condition()` returns true      |
+| `unless({condition, validator})` | Apply validator only when `condition()` returns false     |
+| `where({predicate, validator})`  | Apply validator only when `predicate(value)` returns true |
+| `any(List<Validator>, E)`        | Valid if AT LEAST ONE validator passes                    |
+| `all(List<Validator>, E)`        | Valid if ALL validators pass                              |
+| `none(List<Validator>, E)`       | Valid if NONE pass                                        |
+| `xor(List<Validator>, E)`        | Valid if EXACTLY ONE passes                               |
+| `custom(E? Function(T))`         | Delegates to a callback                                   |
+
+`condition` is `bool Function()` — evaluated lazily at validation time, enabling reactive
+cross-field logic by closing over other inputs.
+
+### `FileValidator<E>` — `Validator<File, E>`
+
+| Factory                          | Fails when                                      |
+|----------------------------------|-------------------------------------------------|
+| `sizeMax(int bytes, E)`          | File size > max                                 |
+| `sizeMin(int bytes, E)`          | File size < min                                 |
+| `sizeRange(int min, int max, E)` | File size outside range                         |
+| `extension(List<String>, E)`     | Extension not in allowed list                   |
+| `exists(E)`                      | File does not exist                             |
+| `notEmpty(E)`                    | File size == 0                                  |
+| `namePattern(RegExp, E)`         | Filename does not match pattern                 |
+| `mimeTypes(List<String>, E)`     | Mime type not in allowed list (extension-based) |
+
+### `ExternalValidator<T, E>` — adapting third-party validators
+
+Adapts validators that follow the Flutter `String? Function(T? value)` signature
+(e.g., `form_builder_validators`):
+
+| Factory                                           | Description                             |
+|---------------------------------------------------|-----------------------------------------|
+| `ExternalValidator.delegate(rule)`                | Uses the external string error directly |
+| `ExternalValidator.override(rule, E)`             | Uses external logic but your error type |
+| `ExternalValidator.map(rule, E Function(String))` | Maps external string to your type       |
+
+### `Validator.compose` — named, reusable pipelines
+
+```dart
+final passwordRules = Validator.compose<String, AuthError>([
+  StringValidator.required(AuthError.required),
+  StringValidator.minLength(8, AuthError.tooShort),
+  StringValidator.hasUppercase(AuthError.noUppercase),
+  StringValidator.hasDigit(AuthError.noDigit),
+  StringValidator.hasSpecialChar(AuthError.noSpecialChar),
+]);
+
+// Drop the composed rule into any input's validators list:
+class PasswordInput extends StringInput<AuthError> ... {
+  @override List<Validator<String, AuthError>> get validators => [passwordRules];
+}
+```
+
+`Validator.compose` runs validators in order and returns the first error — identical
+behaviour to a plain `List` but named, reusable, and expressible as a single constant.
+
+`AsyncValidator.compose` does the same for async validators (sequential execution).
+
+---
+
+## Sanitizers
+
+Sanitizers run **before** validators on every value update. They transform values but never
+produce errors. All sanitizers are `@immutable`.
+
+### `StringSanitizer` — `Sanitizer<String>`
+
+| Factory                    | Transformation                                         |
+|----------------------------|--------------------------------------------------------|
+| `trim()`                   | Remove leading/trailing whitespace                     |
+| `collapseWhitespace()`     | Trim + reduce internal whitespace runs to single space |
+| `removeSpaces()`           | Remove ALL whitespace characters                       |
+| `toLowerCase()`            | Lowercase all characters                               |
+| `toUpperCase()`            | Uppercase all characters                               |
+| `capitalize()`             | First char uppercase, rest lowercase                   |
+| `digitsOnly()`             | Remove all non-digit characters                        |
+| `replace(Pattern, String)` | Replace pattern with replacement string                |
+| `truncate(int maxLength)`  | Silently cap to max characters                         |
+
+### `NumberSanitizer` — `Sanitizer<num>`
+
+| Factory                   | Transformation           |
+|---------------------------|--------------------------|
+| `round()`                 | Round to nearest integer |
+| `ceil()`                  | Round up                 |
+| `floor()`                 | Round down               |
+| `abs()`                   | Absolute value           |
+| `clamp(num min, num max)` | Clamp to range           |
+
+Use `.adapt<T>()` to narrow `Sanitizer<num>` to `Sanitizer<int>` or `Sanitizer<double>`
+when your input is typed to a `num` subtype.
+
+### `ListSanitizer<T>` — `Sanitizer<List<T>>`
+
+| Factory                         | Transformation                                |
+|---------------------------------|-----------------------------------------------|
+| `unique()`                      | Remove duplicates (preserves insertion order) |
+| `remove(T value)`               | Remove all occurrences of a specific value    |
+| `removeWhere(bool Function(T))` | Remove items matching predicate               |
+| `sort()`                        | Sort (requires `T` to be `Comparable`)        |
+
+### `Sanitizer.compose` — named, reusable pipelines
+
+```dart
+final emailSanitizers = Sanitizer.compose<String>([
+  const StringSanitizer.trim(),
+  const StringSanitizer.toLowerCase(),
+]);
+
+class EmailInput extends StringInput<AuthError> ... {
+  @override List<Sanitizer<String>> get sanitizers => [emailSanitizers];
+}
+```
+
+### `Sanitizer.adapt<S extends T>()` — subtype narrowing
+
+Adapts a `Sanitizer<T>` to accept a subtype `S`. Used internally by `NumberInputBuilder`
+to narrow `NumberSanitizer` (which targets `num`) to `Sanitizer<int>` or `Sanitizer<double>`.
+
+---
+
+## FormSchema
+
+### Defining a Schema
+
+Extend `FormSchema` and implement four things:
 
 ```dart
 class LoginSchema extends FormSchema {
   final EmailInput email;
   final PasswordInput password;
 
-  const LoginForm({
+  const LoginSchema({
     this.email = const EmailInput.untouched(),
     this.password = const PasswordInput.untouched(),
+    super.formKey, // thread formKey through every constructor
   });
 
-  // 🔑 Key Configuration
-  // The keys defined here ('email', 'password') will be used 
-  // as the keys in the generated JSON/Map output.
+  // 1. namedInputs — keys become the keys in values / namedErrors / changedValues.
   @override
-  Map<String, FormInput> get namedInputs => {
-    'email': email,
+  Map<String, FormInput<dynamic, dynamic>> get namedInputs => {
+    'email':    email,
     'password': password,
   };
 
-  // Boilerplate: standard copyWith to update state
-  LoginForm copyWith({EmailInput? email, PasswordInput? password}) {
-    return LoginForm(
-      email: email ?? this.email,
-      password: password ?? this.password,
-    );
-  }
+  // 2. copyWith — field-level mutation. Can be hand-written or generated by Freezed.
+  LoginSchema copyWith({EmailInput? email, PasswordInput? password, int? formKey}) =>
+      LoginSchema(
+        email:    email    ?? this.email,
+        password: password ?? this.password,
+        formKey:  formKey  ?? this.formKey,
+      );
+
+  // 3. touchAll — mark every input touched (reveal deferred errors on submit).
+  //    Do NOT increment formKey here.
+  @override
+  LoginSchema touchAll() => copyWith(
+    email:    email.markTouched(),
+    password: password.markTouched(),
+  );
+
+  // 4. reset — revert to initial values AND increment formKey.
+  //    nextFormKey causes keyed TextFields to be recreated by Flutter.
+  @override
+  LoginSchema reset() => LoginSchema(formKey: nextFormKey);
 }
 ```
 
-#### 3.2 Key Capabilities (API Reference)
+### Schema API Reference
 
-By extending `FormSchema`, your form automatically gains the following properties without writing 
-any extra logic:
+#### Validity
 
-| Property          | Type                   | Description                                                                                                                                                                 |
-|:------------------|:-----------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **`namedInputs`** | `Map<String, Input>`   | **(Abstract)** You must override this. It maps serialization keys to their respective input instances.                                                                      |
-| **`inputs`**      | `List<Input>`          | A flattened list of all inputs in the schema. Useful for iterating over fields to check status.                                                                             |
-| **`values`**      | `Map<String, dynamic>` | **Serialization.** Automatically generates a Key-Value map of your form data using the keys from `namedInputs`. <br>Example: `{'email': 'user@co.com', 'password': '123'}`. |
-| **`isValid`**     | `bool`                 | Returns `true` if **every** input in the schema is valid.                                                                                                                   |
-| **`isNotValid`**  | `bool`                 | Convenience getter for `!isValid`.                                                                                                                                          |
-| **`isTouched`**   | `bool`                 | Returns `true` if **at least one** input has been interacted with by the user.                                                                                              |
-| **`isUntouched`** | `bool`                 | Returns `true` if **no** inputs have been touched yet.                                                                                                                      |
-| **`firstError`**  | `dynamic`              | Returns the error of the first invalid input found. Useful for showing a general "Snackbar" error if the form is long.                                                      |
+| Getter          | Type   | Description                                                   |
+|-----------------|--------|---------------------------------------------------------------|
+| `isValid`       | `bool` | All inputs valid + all nested schemas valid + `isSchemaValid` |
+| `isNotValid`    | `bool` | `!isValid`                                                    |
+| `isSchemaValid` | `bool` | All `schemaValidators` pass (cross-field only)                |
+| `isTouched`     | `bool` | Any input or nested schema has been interacted with           |
+| `isUntouched`   | `bool` | No inputs have been touched                                   |
+| `isModified`    | `bool` | Any input or nested schema is dirty (`isDirty`)               |
 
----
+#### Serialization
 
-## 4. State Management Integrations 🔌
+| Getter          | Type                   | Description                                                |
+|-----------------|------------------------|------------------------------------------------------------|
+| `values`        | `Map<String, dynamic>` | All current values keyed by `namedInputs`                  |
+| `changedValues` | `Map<String, dynamic>` | Only dirty inputs; nested schemas appear when `isModified` |
 
-Flux Form is architecture-agnostic. It provides the **data structure**, while your state management
-library handles the **data flow**.
+#### Error Access
 
-Before diving into code, there are two key helpers you should know to manage submission logic.
+| Getter / Method     | Type                   | Description                                                |
+|---------------------|------------------------|------------------------------------------------------------|
+| `firstError`        | `dynamic`              | Error from first invalid input; `null` if all valid        |
+| `firstErrorOf<E>()` | `E?`                   | Typed `firstError` when all inputs share error type `E`    |
+| `errors`            | `List<dynamic>`        | All non-null errors from all inputs in `namedInputs` order |
+| `schemaErrors`      | `List<dynamic>`        | Errors from `schemaValidators`                             |
+| `invalidInputs`     | `List<FormInput>`      | All invalid inputs in `namedInputs` order                  |
+| `namedErrors`       | `Map<String, dynamic>` | `{fieldKey: error}` for every invalid input                |
 
-### 4.1 Core Concepts
-
-#### 1. `FormStatus` (Enum)
-
-Tracks the lifecycle of a form submission. You usually store this alongside your form in your state.
-
-- `initial`: Form hasn't been submitted yet.
-- `submitting`: Async action in progress (show spinner).
-- `succeeded`: Action completed successfully.
-- `failed`: Action failed (show validation errors).
-- `canceled`: User canceled the action.
-
-#### 2. `FormSubmitter` (Utility)
-
-A helper class to standardize the submission flow (try/catch, status updates).
+#### Submit Guard
 
 ```dart
-final submitter = FormSubmitter<void>(
-  onStart: () => emit(state.copyWith(status: FormStatus.submitting)),
-  onSubmit: () => repository.login(state.form.values),
-  onSuccess: (_) => emit(state.copyWith(status: FormStatus.succeeded)),
-  onError: (e, s) => emit(state.copyWith(status: FormStatus.failed)),
+Future<void> submit() async {
+  // validate() = touchAll() + check isValid, returned as a record.
+  final (touched, isValid) = state.schema.validate();
+  if (!isValid) {
+    emit(state.copyWith(schema: touched, status: SubmissionStatus.failure));
+    return;
+  }
+  await FormSubmitter<void>(
+    onStart:   () => emit(state.copyWith(status: SubmissionStatus.inProgress)),
+    onSubmit:  () => api.login(state.schema.values),
+    onSuccess: (_) => emit(state.copyWith(status: SubmissionStatus.success)),
+    onError:   (_, __) => emit(state.copyWith(status: SubmissionStatus.failure)),
+  ).submit();
+}
+```
+
+### Nested Schemas
+
+Override `nestedSchemas` to embed a sub-schema. It participates in all aggregate properties
+automatically.
+
+```dart
+class RegisterSchema extends FormSchema {
+  final NameInput name;
+  final AddressSchema address; // sub-schema
+
+  @override
+  Map<String, FormSchema> get nestedSchemas => {'address': address};
+
+  @override
+  RegisterSchema touchAll() => copyWith(
+    name:    name.markTouched(),
+    address: address.touchAll() as AddressSchema, // cascade
+  );
+
+  @override
+  RegisterSchema reset() => RegisterSchema(formKey: nextFormKey);
+}
+```
+
+Nested schemas appear as nested maps in `values` and `changedValues`:
+`{'name': 'Alice', 'address': {'city': 'London', 'post_code': 'EC1A 1BB'}}`.
+
+### Cross-Field Validation
+
+Override `schemaValidators` and return `SchemaValidator.of<ConcreteSchema, E>(fn)`:
+
+```dart
+@override
+List<SchemaValidator<dynamic>> get schemaValidators => [
+  SchemaValidator.of<BookingSchema, BookingError>((s) {
+    if (s.checkIn.value == null || s.checkOut.value == null) return null;
+    return s.checkOut.value!.isAfter(s.checkIn.value!)
+        ? null
+        : BookingError.checkOutBeforeCheckIn;
+  }),
+];
+```
+
+Schema errors surface via `schema.schemaErrors` and make `isValid` return `false`.
+Display them separately from per-field errors:
+
+```dart
+if (schema.schemaErrors.firstOrNull case BookingError e)
+  Text(e.message(context));
+```
+
+### Edit Flows — `populateFrom`
+
+Override `populateFrom(Map<String, dynamic>)` to pre-fill the form from a server response:
+
+```dart
+@override
+ProfileSchema populateFrom(Map<String, dynamic> data) => copyWith(
+  displayName: displayName.replaceValue(data['display_name'] as String? ?? ''),
+  bio:         bio.replaceValue(data['bio'] as String? ?? ''),
+  address:     address.populateFrom(data['address'] as Map<String, dynamic>? ?? {}),
 );
-await submitter.submit();
 ```
 
----
-
-### 4.2 Implementation Strategies
-
-You can implement Flux Form in two ways depending on complexity:
-
-1. **Using `FormSchema` (Recommended):** Best for scaling. Validation, "Touched" status, and 
-   Serialization are handled automatically.
-2. **Using Individual Inputs:** Good for very simple forms where you don't need group-level logic.
-
-Below are examples for the most popular state management libraries.
-
-### 4.2.1 🧊 Cubit (Bloc Library)
-
-#### Option A: Using FormSchema
-
-The State holds the `LoginForm`. Validation checks are clean (`state.isValid`).
+Call in the Cubit constructor to open the form pre-filled:
 
 ```dart
-class LoginCubit extends Cubit<LoginState> {
-  LoginCubit() : super(const LoginState());
-
-  void emailChanged(String value) {
-    // Update Input -> Update Schema -> Emit
-    emit(state.copyWith(
-      form: state.form.copyWith(email: state.form.email.replaceValue(value))
-    ));
-  }
-
-  Future<void> submit() async {
-    // 1. Check Validity
-    if (state.form.isNotValid) {
-      // Mark all inputs as touched to reveal errors
-      emit(state.copyWith(status: FormStatus.failed)); 
-      return;
-    }
-
-    // 2. Use FormSubmitter for clean async logic
-    final submitter = FormSubmitter(
-      onStart: () => emit(state.copyWith(status: FormStatus.submitting)),
-      onSubmit: () => api.login(state.form.values), // Automatic serialization
-      onSuccess: (_) => emit(state.copyWith(status: FormStatus.succeeded)),
-      onError: (e, s) => emit(state.copyWith(status: FormStatus.failed)),
-    );
-
-    await submitter.submit();
-  }
+EditProfileCubit() : super(const EditProfileState()) {
+  final populated = const ProfileSchema().populateFrom(_serverData);
+  emit(state.copyWith(schema: populated as ProfileSchema));
 }
 ```
 
-#### Option B: Individual Inputs
+For partial population (PATCH workflows — only overwrite keys present in the map):
+```dart
+schema.populateFrom({
+  for (final entry in partialData.entries)
+    if (schema.namedInputs.containsKey(entry.key)) entry.key: entry.value,
+});
+```
 
-The State holds inputs manually. You must manually aggregate validity.
+### PATCH APIs — `changedValues`
+
+`changedValues` returns only inputs where `isDirty == true`:
 
 ```dart
-class LoginState {
+// Only sends fields the user actually changed:
+await api.patchProfile(state.schema.changedValues);
+```
+
+Track whether anything changed:
+```dart
+if (schema.isModified)
+  Chip(label: Text('Unsaved changes'))
+```
+
+Track whether a specific field changed:
+```dart
+if (schema.displayName.isDirty)
+  Text('✏ Modified')
+```
+
+### Stateless Widget Reset — `formKey`
+
+`TextField(onChanged: ...)` owns its text internally and ignores external value changes
+after the first build. The only way to reset visible text **without a
+`TextEditingController` or `StatefulWidget`** is to change the widget's `key`.
+
+`FormSchema.formKey` is an immutable `int` that `reset()` increments via `nextFormKey`.
+Use it as a `ValueKey` prefix:
+
+```dart
+// Stateless — no controller, no StatefulWidget:
+TextField(
+  key: ValueKey('${state.schema.formKey}_email'),
+  onChanged: cubit.emailChanged,
+  decoration: InputDecoration(
+    errorText: state.schema.email.displayError(state.status)?.message(context),
+  ),
+)
+```
+
+When the cubit emits a reset schema, `formKey` has changed. Flutter destroys the old
+`TextField` and creates a fresh one — visible text cleared automatically.
+
+**Rules:**
+- `reset()` must pass `nextFormKey` to the constructor.
+- `touchAll()` must NOT increment `formKey`.
+- `copyWith()` must thread `formKey` through as a passable parameter.
+- Use a unique string prefix per field: `'${schema.formKey}_email'`, `'${schema.formKey}_password'`.
+
+---
+
+## FormMixin
+
+`FormMixin` is the Formz-style alternative for state classes that manage inputs individually
+rather than through a `FormSchema`. Mix it into your state class and implement `inputs`:
+
+```dart
+class LoginState extends Equatable with FormMixin {
   final EmailInput email;
   final PasswordInput password;
+  final SubmissionStatus status;
 
-  const LoginState({
-    this.email = const EmailInput.untouched(), 
-    this.password = const PasswordInput.untouched()
-  });
-
-  // Manual validity aggregation required
-  bool get isValid => email.isValid && password.isValid;
-}
-
-class LoginCubit extends Cubit<LoginState> {
-  LoginCubit() : super(const LoginState());
-
-  void emailChanged(String value) {
-    emit(state.copyWith(
-      email: state.email.replaceValue(value)
-    ));
-  }
-}
-```
-
-### 4.2.2 🧱 Bloc (Event-Driven)
-
-#### Option A: Using FormSchema
-
-```dart
-class LoginBloc extends Bloc<LoginEvent, LoginState> {
-  LoginBloc() : super(const LoginState()) {
-    on<EmailChanged>((event, emit) {
-      emit(state.copyWith(
-        form: state.form.copyWith(email: state.form.email.replaceValue(event.val))
-      ));
-    });
-
-    on<SubmitForm>((event, emit) async {
-      if (state.form.isNotValid) {
-        emit(state.copyWith(status: FormStatus.failed));
-        return;
-      }
-      
-      emit(state.copyWith(status: FormStatus.submitting));
-      try {
-        await api.login(state.form.values);
-        emit(state.copyWith(status: FormStatus.succeeded));
-      } catch (_) {
-        emit(state.copyWith(status: FormStatus.failed));
-      }
-    });
-  }
-}
-```
-
-#### Option B: Individual Inputs
-
-```dart
-class LoginBloc extends Bloc<LoginEvent, LoginState> {
-  LoginBloc() : super(const LoginState()) {
-    on<EmailChanged>((event, emit) {
-      emit(state.copyWith(
-        email: state.email.replaceValue(event.val)
-      ));
-    });
-
-    on<SubmitForm>((event, emit) {
-      // Manual Check
-      if (state.email.isNotValid || state.password.isNotValid) return;
-      
-      api.login({
-        'email': state.email.value,
-        'password': state.password.value,
-      });
-    });
-  }
-}
-```
-
-### 4.2.3 💧 Riverpod
-
-#### Option A: Using FormSchema
-
-The `Notifier` manages the Schema directly.
-
-```dart
-class LoginNotifier extends Notifier<LoginForm> {
   @override
-  LoginForm build() => const LoginForm();
-
-  void onEmailChanged(String val) {
-    state = state.copyWith(email: state.email.replaceValue(val));
-  }
-
-  void submit() {
-    if (state.isValid) {
-      api.login(state.values);
-    }
-  }
+  List<FormInput<dynamic, dynamic>> get inputs => [email, password];
 }
-
-final loginProvider = NotifierProvider<LoginNotifier, LoginForm>(LoginNotifier.new);
 ```
 
-#### Option B: Individual Inputs
+`FormMixin` provides the same computed properties as `FormSchema`:
+`isValid`, `isNotValid`, `isTouched`, `isUntouched`, `invalidInputs`, `errors`.
 
-The State is a plain class holding the inputs.
+`touchAll()` and `reset()` return `List<FormInput>` (not a reconstructed state), so you
+must unpack them manually into `copyWith`. If this becomes burdensome, migrate to
+`FormSchema` which handles reconstruction automatically via `touchAll()` and `reset()`.
+
+---
+
+## MultiStepSchema
+
+`MultiStepSchema` models a multi-step form wizard. It is a concrete, immutable class — not
+abstract, not extended.
 
 ```dart
-class LoginNotifier extends Notifier<LoginState> {
+final wizard = MultiStepSchema(steps: [
+  PersonalStep(),
+  AccountStep(),
+  PreferencesStep(),
+]);
+```
+
+### Navigation
+
+All navigation methods return a new `MultiStepSchema` — the current instance is never mutated.
+
+| Method                | Returns           | Description                                |
+|-----------------------|-------------------|--------------------------------------------|
+| `advance()`           | `MultiStepSchema` | Move to next step; no-op on last step      |
+| `back()`              | `MultiStepSchema` | Move to previous step; no-op on first step |
+| `goToStep(int index)` | `MultiStepSchema` | Jump to index (clamped to valid range)     |
+
+### Mutation
+
+| Method                          | Returns           | Description                               |
+|---------------------------------|-------------------|-------------------------------------------|
+| `updateCurrentStep(FormSchema)` | `MultiStepSchema` | Replace current step with updated version |
+| `updateStep(int, FormSchema)`   | `MultiStepSchema` | Replace step at index                     |
+
+### Validation
+
+| Method                  | Returns                   | Description                        |
+|-------------------------|---------------------------|------------------------------------|
+| `validateCurrentStep()` | `(MultiStepSchema, bool)` | Touch + validate current step only |
+| `validateAll()`         | `(MultiStepSchema, bool)` | Touch + validate all steps         |
+
+```dart
+// Guard before advancing:
+void next() {
+  final (validated, isValid) = state.wizard.validateCurrentStep();
+  if (!isValid) {
+    emit(state.copyWith(wizard: validated, status: SubmissionStatus.failure));
+    return;
+  }
+  emit(state.copyWith(wizard: validated.advance(), status: SubmissionStatus.idle));
+}
+```
+
+### Properties
+
+| Property             | Type                   | Description                          |
+|----------------------|------------------------|--------------------------------------|
+| `currentStep`        | `FormSchema`           | The active step                      |
+| `currentStepIndex`   | `int`                  | Zero-based index                     |
+| `currentStepNumber`  | `int`                  | One-based display index              |
+| `totalSteps`         | `int`                  | Total number of steps                |
+| `isFirstStep`        | `bool`                 | At step 0                            |
+| `isLastStep`         | `bool`                 | At final step                        |
+| `isCurrentStepValid` | `bool`                 | Current step passes all validators   |
+| `allStepsValid`      | `bool`                 | Every step passes all validators     |
+| `progress`           | `double`               | `currentStepNumber / totalSteps`     |
+| `completedSteps`     | `int`                  | Count of valid steps                 |
+| `values`             | `Map<String, dynamic>` | Merged values from all steps         |
+| `changedValues`      | `Map<String, dynamic>` | Merged changed values from all steps |
+
+`touchAll()` cascades into all steps. `reset()` cascades and returns to step 0.
+
+---
+
+## Async Validation
+
+### Declaring async validators on the input
+
+```dart
+class UsernameInput extends StringInput<AuthError>
+    with InputMixin<String, AuthError, UsernameInput> {
+
   @override
-  LoginState build() => const LoginState();
+  List<AsyncValidator<String, AuthError>> get asyncValidators => [
+    _UsernameAvailabilityValidator(),
+  ];
+}
 
-  void onEmailChanged(String val) {
-    state = state.copyWith(email: state.email.replaceValue(val));
-  }
+class _UsernameAvailabilityValidator extends AsyncValidator<String, AuthError> {
+  _UsernameAvailabilityValidator() : super(AuthError.usernameTaken);
 
-  void submit() {
-    if (state.email.isValid && state.password.isValid) {
-      api.login(state.email.value, state.password.value);
-    }
+  @override
+  Future<AuthError?> validate(String value) async {
+    await Future.delayed(const Duration(milliseconds: 800));
+    const taken = {'admin', 'root', 'test'};
+    return taken.contains(value.toLowerCase()) ? error : null;
   }
 }
 ```
 
-### 4.2.4 🐹 MobX
+### Running async validation with `runAsync`
 
-#### Option A: Using FormSchema
-
-Treat the `FormSchema` as an observable. Since FluxForm inputs are immutable, you replace the form
-instance on updates.
+`runAsync` handles the full lifecycle without boilerplate:
 
 ```dart
-class LoginStore = _LoginStore with _$LoginStore;
+Future<void> usernameBlurred() async {
+  final touched = state.username.markTouched();
+  emit(state.copyWith(username: touched));
+  if (!touched.isValid) return; // skip async if sync already fails
 
-abstract class _LoginStore with Store {
-  @observable
-  LoginForm form = const LoginForm();
-
-  @action
-  void setEmail(String value) {
-    form = form.copyWith(email: form.email.replaceValue(value));
-  }
-
-  @action
-  Future<void> submit() async {
-    if (form.isValid) {
-      await api.login(form.values);
-    }
-  }
-}
-```
-
-#### Option B: Individual Inputs
-
-Each input is an observable.
-
-```dart
-abstract class _LoginStore with Store {
-  @observable
-  EmailInput email = const EmailInput.untouched();
-
-  @observable
-  PasswordInput password = const PasswordInput.untouched();
-
-  @computed
-  bool get isValid => email.isValid && password.isValid;
-
-  @action
-  void setEmail(String value) {
-    email = email.replaceValue(value);
-  }
-}
-```
-
-### 4.2.5 📡 Signals
-
-#### Option A: Using FormSchema
-
-```dart
-final loginForm = signal(const LoginForm());
-
-void onEmailChanged(String val) {
-  // Update the signal with a new form instance
-  loginForm.value = loginForm.value.copyWith(
-    email: loginForm.value.email.replaceValue(val),
+  // 1. onValidating fires synchronously — emit spinner state immediately.
+  // 2. Awaits task — your API call.
+  // 3. Returns resolved input — error set or cleared.
+  final resolved = await state.username.runAsync(
+    task: () => _checkAvailability(state.username.value),
+    onValidating: (v) => emit(state.copyWith(username: v)),
   );
-}
-
-void submit() {
-  if (loginForm.value.isValid) {
-    api.login(loginForm.value.values);
-  }
+  emit(state.copyWith(username: resolved));
 }
 ```
 
-#### Option B: Individual Inputs
+### Running built-in `asyncValidators` via `runBuiltInAsyncValidation`
 
 ```dart
-final email = signal(const EmailInput.untouched());
-final password = signal(const PasswordInput.untouched());
-
-// Computed signal for validity
-final isValid = computed(() => email.value.isValid && password.value.isValid);
-
-void onEmailChanged(String val) {
-  email.value = email.value.replaceValue(val);
-}
+final resolved = await state.username.runBuiltInAsyncValidation(
+  onValidating: (v) => emit(state.copyWith(username: v)),
+);
+emit(state.copyWith(username: resolved));
 ```
 
-### 4.2.6 📱 Provider (`ChangeNotifier`)
+### Parallel async validation
 
-#### Option A: Using FormSchema
+`ValidatorPipeline.validateAsyncParallel` fires all validators simultaneously and returns the
+first error in **declaration order** (not completion order):
 
 ```dart
-class LoginProvider extends ChangeNotifier {
-  LoginForm _form = const LoginForm();
-  LoginForm get form => _form;
-
-  void emailChanged(String val) {
-    _form = _form.copyWith(email: _form.email.replaceValue(val));
-    notifyListeners();
-  }
-}
+final error = await ValidatorPipeline.validateAsyncParallel<String, String>(
+  username,
+  [AvailabilityCheck(), BannedWordsCheck()],
+);
 ```
 
-#### Option B: Individual Inputs
+Both validators run in parallel via `Future.wait`. If `BannedWordsCheck` (300 ms) finishes
+before `AvailabilityCheck` (700 ms), the results are still scanned in declaration order —
+`AvailabilityCheck`'s error wins if both fail.
+
+### Debouncing
+
+Flux Form does not provide a built-in debouncer. Use `dart:async Timer`,
+`rxdart`, `easy_debounce`, or `stream_transform` — `runAsync` is fully
+scheduling-agnostic:
 
 ```dart
-class LoginProvider extends ChangeNotifier {
-  EmailInput _email = const EmailInput.untouched();
-  EmailInput get email => _email;
+// dart:async Timer — zero dependencies:
+Timer? _timer;
 
-  void emailChanged(String val) {
-    _email = _email.replaceValue(val);
-    notifyListeners();
-  }
-
-  bool get isValid => _email.isValid; // Add other fields manually
+void usernameChanged(String v) {
+  emit(state.copyWith(username: state.username.setValue(v)));
+  _timer?.cancel();
+  _timer = Timer(const Duration(milliseconds: 500), () async {
+    final resolved = await state.username.runAsync(
+      task: () => api.checkUsername(state.username.value),
+      onValidating: (v) => emit(state.copyWith(username: v)),
+    );
+    emit(state.copyWith(username: resolved));
+  });
 }
-```
 
-### 4.2.7 🍦 Vanilla (`setState`)
-
-#### Option A: Using FormSchema
-
-```dart
-class _LoginScreenState extends State<LoginScreen> {
-  LoginForm form = const LoginForm();
-
-  void _onEmailChanged(String val) {
-    setState(() {
-      form = form.copyWith(email: form.email.replaceValue(val));
-    });
-  }
-}
-```
-
-#### Option B: Individual Inputs
-
-```dart
-class _LoginScreenState extends State<LoginScreen> {
-  EmailInput email = const EmailInput.untouched();
-
-  void _onEmailChanged(String val) {
-    setState(() {
-      email = email.replaceValue(val);
-    });
-  }
+@override
+Future<void> close() {
+  _timer?.cancel();
+  return super.close();
 }
 ```
 
 ---
 
-## 5. User Interface (UI) Integration 🎨
+## State Management Integration
 
-Flux Form is designed to be **UI-Agnostic**. Your logic lives in your State Management layer 
-(Cubit, Provider, etc.), and your UI simply "renders" that state.
+Flux Form provides the **data structure**. Your state management layer provides **data flow**.
+The pattern is identical across all libraries.
 
-This separation of concerns means you stop writing `validator: (val) { ... }` inside your widgets 
-and start using a declarative approach via `displayError`.
-
-### 5.1 The Core Mechanism: `displayError`
-
-The bridge between your logic and the UI is the `displayError(FormStatus)` method. You call this on 
-any input to get the error message (or `null`).
-
-It intelligently decides **whether or not** to reveal the error based on the input's **Validation 
-Mode**:
-
-| Mode                          | Behavior                                                                                   | Best Use Case                           |
-|:------------------------------|:-------------------------------------------------------------------------------------------|:----------------------------------------|
-| **`ValidationMode.live`**     | Errors appear immediately while typing, but *only* if the field is **touched** (dirty).    | Passwords, Search Bars.                 |
-| **`ValidationMode.deferred`** | Errors are hidden until the global `FormStatus` is **failed** (i.e., user pressed Submit). | Emails, Login Forms (less annoying).    |
-| **`ValidationMode.blur`**     | Validates when the field loses focus.                                                      | Usernames (API checks), complex inputs. |
+### Cubit / Bloc (flutter_bloc)
 
 ```dart
-// ❌ The Old Way (Logic in UI)
-validator: (value) => value.isEmpty ? 'Required' : null;
+class LoginCubit extends Cubit<LoginState> {
+  LoginCubit() : super(const LoginState());
 
-// ✅ The Flux Form Way (Logic in State)
-// Automatically respects the modes defined above
-errorText: form.email.displayError(state.status),
+  void emailChanged(String v) => emit(state.copyWith(
+    schema: state.schema.copyWith(email: state.schema.email.replaceValue(v)),
+    status: SubmissionStatus.idle,
+  ));
+
+  Future<void> submit() async {
+    final (touched, isValid) = state.schema.validate();
+    if (!isValid) {
+      emit(state.copyWith(schema: touched, status: SubmissionStatus.failure));
+      return;
+    }
+    await FormSubmitter<void>(
+      onStart:   () => emit(state.copyWith(status: SubmissionStatus.inProgress)),
+      onSubmit:  () => api.login(state.schema.values),
+      onSuccess: (_) => emit(state.copyWith(status: SubmissionStatus.success)),
+      onError:   (_, __) => emit(state.copyWith(status: SubmissionStatus.failure)),
+    ).submit();
+  }
+}
 ```
 
-### 5.2 Text Inputs (`StringInput`, `NumberInput`)
-
-Use standard `TextField` or `TextFormField` widgets. Since validation is calculated in your state, 
-you do **not** use the `validator` property.
+### Riverpod (Notifier)
 
 ```dart
+class LoginNotifier extends Notifier<LoginSchema> {
+  @override
+  LoginSchema build() => const LoginSchema();
+
+  void emailChanged(String v) =>
+      state = state.copyWith(email: state.email.replaceValue(v));
+
+  void submit() {
+    if (state.isValid) api.login(state.values);
+  }
+}
+```
+
+### Provider (ChangeNotifier)
+
+```dart
+class LoginProvider extends ChangeNotifier {
+  LoginSchema _schema = const LoginSchema();
+  LoginSchema get schema => _schema;
+
+  void emailChanged(String v) {
+    _schema = _schema.copyWith(email: _schema.email.replaceValue(v));
+    notifyListeners();
+  }
+}
+```
+
+### Vanilla `setState`
+
+```dart
+class _LoginScreen extends State<LoginScreen> {
+  LoginSchema _schema = const LoginSchema();
+
+  void _emailChanged(String v) => setState(() {
+    _schema = _schema.copyWith(email: _schema.email.replaceValue(v));
+  });
+}
+```
+
+---
+
+## UI Integration
+
+### Standard text field
+
+```dart
+// StatelessWidget — no TextEditingController needed.
 TextField(
-  // 1. Bind actions
-  onChanged: (val) => context.read<LoginCubit>().emailChanged(val),
-  
-  // 2. Bind styling & errors
+  key: ValueKey('${state.schema.formKey}_email'), // enables stateless reset
+  onChanged: cubit.emailChanged,
   decoration: InputDecoration(
     labelText: 'Email',
-    hintText: 'user@example.com',
-    
-    // 3. Display error (returns String? or null)
-    // If using Enum Errors: .displayError(...)?.message(context)
-    errorText: state.form.email.displayError(state.status),
-    
-    // 4. Optional: Visual cues for valid states
-    suffixIcon: state.form.email.isValid 
-        ? const Icon(Icons.check, color: Colors.green) 
+    // displayError respects ValidationMode automatically.
+    errorText: state.schema.email.displayError(state.status)?.message(context),
+    suffixIcon: state.schema.email.isValid
+        ? const Icon(Icons.check_circle_outline, color: Colors.green)
         : null,
   ),
 )
 ```
 
-> **💡 Pro Tip: Text Controllers**
-> When using state management, you generally **do not** need a `TextEditingController` unless you 
-> need to manipulate the cursor or clear the text programmatically. The `onChanged` callback is 
-> sufficient to keep your state in sync.
+### Bool / checkbox
 
-### 5.3 Toggles & Checkboxes (`BoolInput`)
-
-Boolean inputs often don't have a built-in `errorText` property in Flutter. You can wrap them or 
-conditionally display the error text below.
+`BoolInput` has no built-in `errorText` property in Flutter. Display the error manually:
 
 ```dart
-Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    CheckboxListTile(
-      title: const Text('I accept the Terms of Service'),
-      value: state.form.acceptTerms.value,
-      onChanged: (val) => cubit.termsChanged(val ?? false),
+Column(children: [
+  CheckboxListTile(
+    title: const Text('I accept the Terms of Service'),
+    value: state.schema.acceptTerms.value,
+    onChanged: (v) => cubit.acceptTermsChanged(v ?? false),
+  ),
+  if (state.schema.acceptTerms.displayError(state.status) != null)
+    Padding(
+      padding: const EdgeInsets.only(left: 16),
+      child: Text(
+        state.schema.acceptTerms.displayError(state.status)!,
+        style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+      ),
     ),
-    
-    // Manually render the error if it exists
-    if (state.form.acceptTerms.displayError(state.status) != null)
-      Padding(
-        padding: const EdgeInsets.only(left: 16.0),
-        child: Text(
-          state.form.acceptTerms.displayError(state.status)!,
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
-        ),
-      ),
-  ],
-)
+])
 ```
 
-### 5.4 Custom & Generic Inputs (Dropdowns)
+### Date picker (blur mode)
 
-For inputs like `GenericInput` or `StandardInput` used with Dropdowns, the pattern remains 
-identical.
+Selecting a date is the "blur event" — update value and mark touched in one chain:
 
 ```dart
-DropdownButtonFormField<UserRole>(
-  value: state.form.role.value,
-  items: UserRole.values.map((role) => DropdownMenuItem(
-    value: role, 
-    child: Text(role.name),
-  )).toList(),
-  
-  onChanged: (val) => cubit.roleChanged(val),
-  
-  // Works exactly the same!
-  decoration: InputDecoration(
-    labelText: 'Role',
-    errorText: state.form.role.displayError(state.status),
+onTap: () async {
+  final d = await showDatePicker(...);
+  if (d != null) cubit.checkInSelected(d);
+}
+
+// Cubit:
+void checkInSelected(DateTime d) => emit(state.copyWith(
+  schema: state.schema.copyWith(
+    checkIn: state.schema.checkIn.setValue(d).markTouched(),
   ),
+));
+```
+
+### Password strength meter (`detailedErrors`)
+
+```dart
+// detailedErrors runs ALL validators — not just the first — and returns every
+// failing error. Use for requirement checklists and strength indicators.
+Column(
+  children: [
+    (AuthError.tooShort,      'At least 8 characters'),
+    (AuthError.noUppercase,   'One uppercase letter'),
+    (AuthError.noDigit,       'One digit'),
+    (AuthError.noSpecialChar, 'One special character'),
+  ].map((req) {
+    final met = !state.schema.password.detailedErrors.contains(req.$1);
+    return Row(children: [
+      Icon(met ? Icons.check_circle : Icons.radio_button_unchecked,
+           color: met ? Colors.green : Colors.grey),
+      Text(req.$2),
+    ]);
+  }).toList(),
 )
 ```
 
-### 5.5 Submission Buttons
-
-You can control your submit button state based on the form's validity or submission status.
+### Submit button
 
 ```dart
-FloatingActionButton(
-  // Option A: Disable button if invalid
-  // Option B: Keep enabled, and let 'displayError' reveal errors on click (Recommended)
-  onPressed: state.status.isSubmitting 
-      ? null 
-      : () => cubit.submit(),
-      
-  child: state.status.isSubmitting
+ElevatedButton(
+  onPressed: state.status.isInProgress ? null : cubit.submit,
+  child: state.status.isInProgress
       ? const CircularProgressIndicator(color: Colors.white)
-      : const Icon(Icons.arrow_forward),
+      : const Text('Submit'),
 )
 ```
 
-### 5.6 Integration with Flutter's `Form` Widget
+---
 
-**Do I need the `Form` widget?**
-Strictly speaking, **no**. Flux Form handles validation independently.
+## FormSubmitter
 
-However, you *may* still wrap your fields in a `Form` widget to utilize **Focus Management** (e.g.,
-the "Next" button on the keyboard moving focus automatically).
+Encapsulates the full async submission lifecycle — try/catch, status transitions, result
+routing — so the Cubit handler stays flat:
 
 ```dart
-// ✅ Correct Usage
-Form(
-  // No GlobalKey needed!
-  child: Column(
-    children: [
-      TextField(
-        textInputAction: TextInputAction.next, // Works automatically inside Form
-        ...
-      ),
-      TextField(...),
-    ],
-  ),
-)
+await FormSubmitter<UserDto>(
+  onStart:   () => emit(state.copyWith(status: SubmissionStatus.inProgress)),
+  onSubmit:  () => api.register(state.schema.values),
+  onSuccess: (user) => emit(state.copyWith(user: user, status: SubmissionStatus.success)),
+  onError:   (error, stack) => emit(state.copyWith(status: SubmissionStatus.failure)),
+).submit();
 ```
 
-**⚠️ Anti-Pattern:**
-Do **not** use `_formKey.currentState.validate()`.
-- **Why?** That triggers Flutter's internal mutable state validation.
-- **Instead:** Check `state.form.isValid` in your business logic.
+For architectures where the actual async work is delegated to another Bloc:
 
-### 5.7 Stateless vs Stateful
-Because Flux Form moves state out of the widget tree:
+```dart
+await FormSubmitter.delegated(onValid: () => authBloc.add(LoginRequested())).submit();
+```
 
-1. **Prefer `StatelessWidget`:** Your form screen should ideally be stateless, rebuilding only 
-   when your State Manager (Bloc/Riverpod/etc.) emits a new state.
-2. **Use `StatefulWidget` only if:**
-   - You are managing the form using vanilla `setState`.
-   - You need to manage `FocusNode`s or `ScrollController`s for complex UI interactions (e.g., 
-     "Scroll to first error").
+`SubmissionStatus` values: `idle`, `inProgress`, `success`, `failure`, `canceled`.
+Helper getters: `isIdle`, `isInProgress`, `isSuccess`, `isFailure`, `isCanceled`,
+`isCommitted` (`isInProgress || isSuccess`), `isFinalized` (`isSuccess || isFailure || isCanceled`).
 
-#### Summary Table
+---
 
-| Feature               | Standard Flutter Form             | Flux Form                            |
-|:----------------------|:----------------------------------|:-------------------------------------|
-| **Widget Type**       | `StatefulWidget` (usually)        | `StatelessWidget` (preferred)        |
-| **Validation Source** | `validator: (val) => ...`         | `field.validators` list              |
-| **Error Display**     | Triggered by `formKey.validate()` | `errorText: field.displayError(...)` |
-| **Form State**        | `GlobalKey<FormState>`            | `FormSchema` class                   |
-| **Controllers**       | Required for text access          | Optional (Value is in State)         |
+## Composition Utilities
+
+### `Validator.compose<T, E>`
+
+```dart
+final rules = Validator.compose<String, AuthError>([v1, v2, v3]);
+```
+
+Runs validators in order, returns first error. Behaves identically to a plain `List` used as
+`validators`, but is named, storable as a constant, and composable with other composed rules.
+
+### `Sanitizer.compose<T>`
+
+```dart
+final pipeline = Sanitizer.compose<String>([s1, s2, s3]);
+```
+
+Pipes value through sanitizers in sequence. Output of each sanitizer is input to the next.
+
+### `AsyncValidator.compose<T, E>`
+
+```dart
+final asyncRules = AsyncValidator.compose<String, AuthError>([av1, av2]);
+```
+
+Runs async validators sequentially, returns first error.
+
+### `ValidatorPipeline` — static helpers
+
+| Method                                                                | Description                                             |
+|-----------------------------------------------------------------------|---------------------------------------------------------|
+| `validate<T, E>(value, validators)`                                   | Run sync validators, return first error                 |
+| `validateWithHooks(value, validators, {onStart, onError, onSuccess})` | Same with lifecycle hooks                               |
+| `validateAll<T, E>(value, validators)`                                | Run ALL validators, return list of ALL errors           |
+| `validateAsync<T, E>(value, asyncValidators)`                         | Sequential async, return first error                    |
+| `validateAsyncParallel<T, E>(value, asyncValidators)`                 | Parallel async, return first error in declaration order |
+
+### `Validator.adapt<S extends T>()`
+
+Narrows a `Validator<T, E>` to `Validator<S, E>` for extension types or `num` subtypes:
+
+```dart
+// NumberValidator<E> validates num. Adapt to Validator<int, E>:
+NumberValidator.min(0, AuthError.negative).adapt<int>()
+```
+
+### `Sanitizer.adapt<S extends T>()`
+
+Same concept for sanitizers:
+
+```dart
+NumberSanitizer.round().adapt<int>()  // Sanitizer<num> → Sanitizer<int>
+```
+
+---
+
+## Complete API Reference
+
+### Input Type Summary
+
+| Input                                                             | Value Type      | Key features                                                               |
+|-------------------------------------------------------------------|-----------------|----------------------------------------------------------------------------|
+| `StringInput<E>` / `SimpleStringInput<E>`                         | `String`        | All string validators, sanitizers                                          |
+| `NumberInput<T extends num, E>` / `SimpleNumberInput<T, E>`       | `T extends num` | `increment`, `decrement`; works for `int` and `double`                     |
+| `BoolInput<E>` / `SimpleBoolInput<E>`                             | `bool`          | `toggle()` helper                                                          |
+| `DateTimeInput<E>` / `SimpleDateTimeInput<E>`                     | `DateTime?`     | Nullable; `isAfter`, `isBefore`, `daysDifference` helpers                  |
+| `BaseListInput<T, E>` / `ListInput<T, E>`                         | `List<T>`       | `addItem`, `setItem`, `removeItemAt`; two-tier validation (list + item)    |
+| `MapInput<K, V, E>` / `SimpleMapInput<K, V, E>`                   | `Map<K, V>`     | `putItem`, `removeItem`, `valueErrorAt`; two-tier validation (map + value) |
+| `ObjectInput<T, E extends FormError>` / `SimpleObjectInput<T, E>` | Any `T`         | For enum, DTO, sealed class; requires `FormError` error type               |
+
+### `ListInput<T, E>` — List-specific API
+
+| Method              | Returns           | Description                                             |
+|---------------------|-------------------|---------------------------------------------------------|
+| `addItem(T)`        | `ListInput<T, E>` | Sanitize + append + mark touched                        |
+| `setItem(int, T)`   | `ListInput<T, E>` | Sanitize + replace at index + mark touched              |
+| `removeItemAt(int)` | `ListInput<T, E>` | Remove at index + mark touched                          |
+| `itemError`         | `E?`              | First item-level error (O(1) — cached from last update) |
+| `itemErrorAt(int)`  | `E?`              | Item-level error at index (recomputed each call)        |
+
+### `MapInput<K, V, E>` — Map-specific API
+
+| Method            | Returns             | Description                              |
+|-------------------|---------------------|------------------------------------------|
+| `putItem(K, V)`   | `MapInput<K, V, E>` | Sanitize + insert/replace + mark touched |
+| `removeItem(K)`   | `MapInput<K, V, E>` | Remove key + mark touched                |
+| `valueErrorAt(K)` | `E?`                | Error for value at key                   |
+
+### `AsyncValidator<T, E>`
+
+```dart
+abstract class AsyncValidator<T, E> {
+  final E? error;
+  const AsyncValidator([this.error]);
+  Future<E?> validate(T value);
+  static AsyncValidator<T, E> compose<T, E>(List<AsyncValidator<T, E>> validators);
+}
+```
+
+### `SchemaValidator<E>`
+
+```dart
+abstract class SchemaValidator<E> {
+  E? validate(FormSchema schema);
+
+  // Typed factory — fn receives the concrete schema type S.
+  static SchemaValidator<E> of<S extends FormSchema, E>(E? Function(S) fn);
+}
+```
+
+### `FormError` interface
+
+```dart
+abstract interface class FormError {
+  String get code;
+  String message([covariant dynamic context]);
+}
+```
+
+### `InputStatus` enum
+
+`untouched` — initial state, no interaction. `touched` — user has interacted.
+`validating` — async check in progress.
+
+### `SubmissionStatus` enum
+
+`idle` · `inProgress` · `success` · `failure` · `canceled`
+
+Helper getters: `isIdle` · `isInProgress` · `isSuccess` · `isFailure` · `isCanceled` ·
+`isCommitted` (`inProgress || success`) · `isFinalized` (`success || failure || canceled`).
+
+### `ValidationMode` enum
+
+`live` — error shown when touched. `deferred` — error hidden until `failure`.
+`blur` — identical to `live` at runtime; UI contract: `setValue` on change, `markTouched` on blur.
 
 ---
 
 ## ❤️ Contributing
 
-Issues and Pull Requests are welcome! Flux Form aims to be the standard for clean, maintainable 
-forms in Dart.
+Issues and Pull Requests are welcome. Flux Form aims to be the standard for clean,
+maintainable forms in Dart.
+
+Repository: https://github.com/puntbyte/flux_form
