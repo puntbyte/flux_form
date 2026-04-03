@@ -1,30 +1,20 @@
+// lib/features/booking/cubit/booking_state.dart
+
 part of 'booking_cubit.dart';
 
-class BookingState extends Equatable with FormMixin {
-  final StringInput<String> start;
-  final StringInput<String> end;
+class BookingState {
+  final BookingSchema schema;
   final SubmissionStatus status;
 
-  const BookingState({
-    StringInput<String>? start,
-    StringInput<String>? end,
-    this.status = SubmissionStatus.idle,
-  }) : start = start ?? const StringInput.untouched(),
-       end = end ?? const StringInput.untouched();
+  BookingState({required this.schema, required this.status});
 
-  @override
-  List<FormInput<dynamic, String>> get inputs => [start, end];
-
-  BookingState copyWith({
-    StringInput<String>? start,
-    StringInput<String>? end,
-    SubmissionStatus? status,
-  }) => BookingState(
-    start: start ?? this.start,
-    end: end ?? this.end,
-    status: status ?? this.status,
+  factory BookingState.initial() => BookingState(
+    schema: BookingSchema(),
+    status: SubmissionStatus.idle,
   );
 
-  @override
-  List<Object> get props => [start, end, status];
+  BookingState copyWith({BookingSchema? schema, SubmissionStatus? status}) => BookingState(
+    schema: schema ?? this.schema,
+    status: status ?? this.status,
+  );
 }

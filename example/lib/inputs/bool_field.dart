@@ -7,14 +7,17 @@ class BoolField extends FormInput<bool, String> with InputMixin<bool, String, Bo
   const BoolField.touched({super.value = false}) : super.touched();
 
   @override
-  FormInput<bool, String> update({
+  BoolField update({
     bool? value,
     InputStatus? status,
     ValidationMode? mode,
     String? remoteError,
   }) {
-    return isTouched
-        ? BoolField.touched(value: value ?? this.value)
-        : BoolField.untouched(value: value ?? this.value);
+    // Respect the incoming status so that replaceValue() correctly transitions
+    // an untouched field to touched on first interaction.
+    final effectiveStatus = status ?? this.status;
+    return effectiveStatus == InputStatus.untouched
+        ? BoolField.untouched(value: value ?? this.value)
+        : BoolField.touched(value: value ?? this.value);
   }
 }
