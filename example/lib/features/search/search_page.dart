@@ -1,7 +1,10 @@
+// lib/features/search/search_page.dart
+
 import 'package:example/features/search/cubit/search_cubit.dart';
 import 'package:example/widgets/app_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flux_form/flux_form.dart';
 
 class SearchPage extends StatelessWidget {
   const SearchPage({super.key});
@@ -11,110 +14,197 @@ class SearchPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => SearchCubit(),
       child: Scaffold(
-        appBar: AppBar(title: const Text('Product Search')),
+        appBar: AppBar(
+          title: const Text('Search — Debouncer · runAsync · Parallel'),
+        ),
         drawer: const AppDrawer(),
-        body: const _SearchView(),
+        body: BlocBuilder<SearchCubit, SearchState>(
+          builder: (ctx, state) => _SearchBody(state),
+        ),
       ),
     );
   }
 }
 
-class _SearchView extends StatelessWidget {
-  const _SearchView();
+class _SearchBody extends StatelessWidget {
+  final SearchState state;
+  const _SearchBody(this.state);
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<SearchCubit>().state;
     final cubit = context.read<SearchCubit>();
 
-    // Resolve the error message based on the FluxForm mode
-    final errorMsg = state.searchBar.displayError(state.status);
-
-    return Padding(
+    return ListView(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 1. Flutter SearchBar
-          _buildSearchBar(cubit, state, errorMsg),
+      children: [
+        _FeatureTag(
+          'Debouncer · runAsync · runBuiltInAsyncValidation · '
+              'validateAsyncParallel · blur mode',
+        ),
+        const SizedBox(height: 20),
 
-          // 2. Custom Error Display (Since SearchBar doesn't have errorText)
-          if (errorMsg != null) _buildError(errorMsg, context),
-
-          const SizedBox(height: 20),
-
-          // 3. Results List
-          Expanded(child: _buildResults(state)),
-        ],
-      ),
-    );
-  }
-
-  Padding _buildError(String errorMsg, BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, left: 16),
-      child: Text(
-        errorMsg,
-        style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
-      ),
-    );
-  }
-
-  Widget _buildSearchBar(SearchCubit cubit, SearchState state, String? errorMsg) {
-    return SearchBar(
-      hintText: 'Search products...',
-      leading: const Icon(Icons.search),
-      onChanged: cubit.searchChanged,
-      // Show spinner inside the bar
-      trailing: state.isSearching
-          ? [
-              const Padding(
-                padding: EdgeInsets.all(8),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+        // ── Product search — live + debounced ──────────────────────────────
+        const Text('Product Search',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        TextField(
+          onChanged: cubit.searchChanged,
+          decoration: InputDecoration(
+            labelText: 'Search products…',
+            helperText:
+            'Debouncer: API fires 450 ms after you stop typing',
+            prefixIcon: state.isSearching
+                ? const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
-            ]
-          : null,
-      // Visual feedback for error state
-      backgroundColor: WidgetStateProperty.resolveWith((states) {
-        if (errorMsg != null) return Colors.red.shade50;
-        return null;
-      }),
+            )
+                : const Icon(Icons.search),
+            errorText: state.searchBar.displayError(SubmissionStatus.idle),
+          ),
+        ),
+        if (state.results.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          ...state.results.map(
+                (r) => ListTile(
+              dense: true,
+              leading: const Icon(Icons.inventory_2_outlined, size: 18),
+              title: Text(r),
+            ),
+          ),
+        ] else if (state.searchBar.value.length >= 2 && !state.isSearching) ...[
+          const SizedBox(height: 8),
+          const Text('No results found.',
+              style: TextStyle(color: Colors.grey)),
+        ],
+
+        const Divider(height: 40),
+
+        // ── Username — blur mode + runAsync ────────────────────────────────
+        const Text('Username Availability',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'blur mode: error shows only after leaving the field.\n'
+              'Try: admin, root, flux, test (taken) or spam (banned).',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          onChanged: cubit.usernameChanged,
+          onEditingComplete: cubit.usernameBlurred, // ← blur trigger
+          decoration: InputDecoration(
+            labelText: 'Username',
+            helperText: state.username.isValidating
+                ? 'Checking availability…'
+                : 'runAsync: markValidating → await task → resolveAsyncValidation',
+            suffixIcon: state.username.isValidating
+                ? const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+                : state.username.isValid && state.username.isTouched
+                ? const Icon(Icons.check_circle, color: Colors.green)
+                : null,
+            // displayError respects blur mode — hidden until touched.
+            errorText: state.username
+                .displayError(SubmissionStatus.idle)
+                ?.message(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: cubit.usernameBlurred,
+              child: const Text('Trigger blur'),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton(
+              onPressed: cubit.checkViaBuiltIn,
+              child: const Text('runBuiltInAsync'),
+            ),
+          ),
+        ]),
+
+        const Divider(height: 40),
+
+        // ── Parallel async validation ───────────────────────────────────────
+        const Text('Parallel Async Validation',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'validateAsyncParallel fires both validators simultaneously.\n'
+              'Results are returned in declaration order, not completion order.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        const SizedBox(height: 8),
+        ElevatedButton(
+          onPressed: state.parallelRunning ? null : cubit.runParallel,
+          child: state.parallelRunning
+              ? const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white),
+              ),
+              SizedBox(width: 8),
+              Text('Running both in parallel…'),
+            ],
+          )
+              : const Text('Run validateAsyncParallel()'),
+        ),
+        if (state.parallelResult.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: state.parallelResult.startsWith('✓')
+                  ? Colors.green.shade50
+                  : Colors.red.shade50,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              state.parallelResult,
+              style: TextStyle(
+                color: state.parallelResult.startsWith('✓')
+                    ? Colors.green.shade800
+                    : Colors.red.shade800,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
+}
 
-  Widget _buildResults(SearchState state) {
-    if (state.results.isEmpty) {
-      if (state.searchBar.value.isEmpty) {
-        return const Center(child: Text('Start typing to search...'));
-      }
-      if (state.searchBar.isValid && !state.isSearching) {
-        return const Center(child: Text('No products found.'));
-      }
-      return const SizedBox.shrink();
-    }
+class _FeatureTag extends StatelessWidget {
+  final String text;
+  const _FeatureTag(this.text);
 
-    return ListView.separated(
-      itemCount: state.results.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final product = state.results[index];
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: Colors.blue.shade100,
-            child: Text(product.name[0]),
-          ),
-          title: Text(product.name),
-          subtitle: Text(product.category),
-          trailing: Text(
-            '\$${product.price.toStringAsFixed(2)}',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-        );
-      },
-    );
-  }
+  @override
+  Widget build(BuildContext context) => Container(
+    padding:
+    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: Colors.indigo.shade50,
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: 10, color: Colors.indigo.shade700),
+    ),
+  );
 }

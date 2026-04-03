@@ -1,33 +1,38 @@
+// lib/features/search/cubit/search_state.dart
+
 part of 'search_cubit.dart';
 
-class SearchState extends Equatable with FormMixin {
+class SearchState {
   final SearchInput searchBar;
-  final SubmissionStatus status;
-  final List<Product> results;
+  final UsernameInput username;
+  final List<String> results;
   final bool isSearching;
+  final bool parallelRunning;
+  final String parallelResult;
 
   const SearchState({
     SearchInput? searchBar,
-    this.status = SubmissionStatus.idle,
+    UsernameInput? username,
     this.results = const [],
     this.isSearching = false,
-  }) : searchBar = searchBar ?? const SearchInput.untouched();
-
-  @override
-  List<FormInput<dynamic, dynamic>> get inputs => [searchBar];
+    this.parallelRunning = false,
+    this.parallelResult = '',
+  }) : searchBar = searchBar ?? const SearchInput.untouched(),
+       username = username ?? const UsernameInput.untouched();
 
   SearchState copyWith({
     SearchInput? searchBar,
-    SubmissionStatus? status,
-    List<Product>? results,
+    UsernameInput? username,
+    List<String>? results,
     bool? isSearching,
+    bool? parallelRunning,
+    String? parallelResult,
   }) => SearchState(
     searchBar: searchBar ?? this.searchBar,
-    status: status ?? this.status,
+    username: username ?? this.username,
     results: results ?? this.results,
     isSearching: isSearching ?? this.isSearching,
+    parallelRunning: parallelRunning ?? this.parallelRunning,
+    parallelResult: parallelResult ?? this.parallelResult,
   );
-
-  @override
-  List<Object> get props => [searchBar, status, results, isSearching];
 }
